@@ -1,26 +1,60 @@
-
 exports.handler = async (event) => {
   try {
-    // Telegram باید درخواست POST بفرستد
+    // فقط درخواست‌های Telegram باید POST باشند
     if (event.httpMethod !== "POST") {
       return {
         statusCode: 200,
         body: JSON.stringify({
           success: true,
-          message: "HamedShop Telegram Webhook is ready 🚀"
+          message: "HamedShop Telegram Webhook is alive 🚀"
         })
       };
     }
 
-    // دریافت اطلاعات ارسال‌شده توسط Telegram
     const update = JSON.parse(event.body || "{}");
 
-    // اگر پیام متنی وجود داشت
+    console.log("TELEGRAM UPDATE:", JSON.stringify(update, null, 2));
+
+    /*
+     * ==========================================
+     * 1. پیام‌های کانال
+     * ==========================================
+     */
+
+    if (update.channel_post) {
+      const channel = update.channel_post.chat;
+
+      console.log("CHANNEL ID:", channel.id);
+      console.log("CHANNEL TITLE:", channel.title);
+      console.log("MESSAGE ID:", update.channel_post.message_id);
+      console.log("MESSAGE TEXT:", update.channel_post.text || "");
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          success: true,
+          type: "channel_post",
+          channel_id: channel.id,
+          channel_title: channel.title,
+          message_id: update.channel_post.message_id
+        })
+      };
+    }
+
+    /*
+     * ==========================================
+     * 2. پیام‌های خصوصی ربات
+     * ==========================================
+     */
+
     if (update.message && update.message.text) {
       const chatId = update.message.chat.id;
-      const text = update.message.text;
+      const text = update.message.text.trim();
 
-      // فعلاً فقط /start را پاسخ می‌دهیم
+      console.log("PRIVATE CHAT ID:", chatId);
+      console.log("MESSAGE:", text);
+
+      // پاسخ به /start
       if (text === "/start") {
         const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -33,7 +67,10 @@ exports.handler = async (event) => {
             },
             body: JSON.stringify({
               chat_id: chatId,
-              text: "سلام 👋\n\nبه HamedShop خوش آمدید 🛍️"
+              text:
+                "سلام 👋\n\n" +
+                "به HamedShop خوش آمدید 🛍️\n\n" +
+                "سیستم فروشگاه با موفقیت متصل است."
             })
           }
         );
@@ -63,4 +100,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
