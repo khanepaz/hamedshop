@@ -1,6 +1,6 @@
 exports.handler = async (event) => {
   try {
-    // فقط درخواست‌های Telegram باید POST باشند
+    // فقط درخواست‌های POST
     if (event.httpMethod !== "POST") {
       return {
         statusCode: 200,
@@ -13,37 +13,64 @@ exports.handler = async (event) => {
 
     const update = JSON.parse(event.body || "{}");
 
-    console.log("TELEGRAM UPDATE:", JSON.stringify(update, null, 2));
-
     /*
      * ==========================================
-     * 1. پیام‌های کانال
+     * پیام‌های کانال
      * ==========================================
      */
 
     if (update.channel_post) {
       const channel = update.channel_post.chat;
 
-      console.log("CHANNEL ID:", channel.id);
-      console.log("CHANNEL TITLE:", channel.title);
-      console.log("MESSAGE ID:", update.channel_post.message_id);
-      console.log("MESSAGE TEXT:", update.channel_post.text || "");
+      const channelId = channel.id;
+      const channelTitle = channel.title || "Unknown";
+      const messageId = update.channel_post.message_id;
+      const messageText = update.channel_post.text || "";
+
+      console.log("CHANNEL ID:", channelId);
+      console.log("CHANNEL TITLE:", channelTitle);
+      console.log("MESSAGE ID:", messageId);
+      console.log("MESSAGE TEXT:", messageText);
+
+      // اعلام Chat ID داخل خود کانال
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+
+      await fetch(
+        `https://api.telegram.org/bot${token}/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            chat_id: channelId,
+            text:
+              "✅ اتصال کانال به HamedShop برقرار است.\n\n" +
+              "Channel ID:\n" +
+              channelId +
+              "\n\n" +
+              "Channel Title:\n" +
+              channelTitle +
+              "\n\n" +
+              "Message ID:\n" +
+              messageId
+          })
+        }
+      );
 
       return {
         statusCode: 200,
         body: JSON.stringify({
           success: true,
           type: "channel_post",
-          channel_id: channel.id,
-          channel_title: channel.title,
-          message_id: update.channel_post.message_id
+          channel_id: channelId
         })
       };
     }
 
     /*
      * ==========================================
-     * 2. پیام‌های خصوصی ربات
+     * پیام خصوصی ربات
      * ==========================================
      */
 
@@ -54,7 +81,6 @@ exports.handler = async (event) => {
       console.log("PRIVATE CHAT ID:", chatId);
       console.log("MESSAGE:", text);
 
-      // پاسخ به /start
       if (text === "/start") {
         const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -95,7 +121,7 @@ exports.handler = async (event) => {
       statusCode: 500,
       body: JSON.stringify({
         success: false,
-        error: "Internal server error"
+        error: error.message
       })
     };
   }
