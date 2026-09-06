@@ -57,6 +57,46 @@ exports.handler = async (event) => {
 
 
     // ==========================================
+    // ویرایش پیام
+    // ==========================================
+
+    async function editMessage(
+      chatId,
+      messageId,
+      text,
+      keyboard = null
+    ) {
+
+      const body = {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text
+      };
+
+      if (keyboard) {
+        body.reply_markup = {
+          inline_keyboard: keyboard
+        };
+      }
+
+      const response = await fetch(
+        `https://api.telegram.org/bot${token}/editMessageText`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify(body)
+        }
+      );
+
+      return await response.json();
+    }
+
+
+    // ==========================================
     // پاسخ به Callback
     // ==========================================
 
@@ -136,7 +176,6 @@ exports.handler = async (event) => {
           continue;
         }
 
-        // حذف #PRODUCT
         if (line === "#PRODUCT") {
           continue;
         }
@@ -181,7 +220,7 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // استانداردسازی اطلاعات
+    // استانداردسازی اطلاعات محصول
     // ==========================================
 
     function normalizeProduct(product) {
@@ -218,6 +257,12 @@ exports.handler = async (event) => {
         options2:
           product["گزینه‌ها 2"] || "",
 
+        variant3:
+          product["تنوع 3"] || "",
+
+        options3:
+          product["گزینه‌ها 3"] || "",
+
         description:
           product["توضیحات"] || "",
 
@@ -252,7 +297,48 @@ exports.handler = async (event) => {
         errors.push("وضعیت");
       }
 
+      // اگر نام تنوع وجود دارد، گزینه هم باید وجود داشته باشد
+
+      if (
+        product.variant1 &&
+        !product.options1
+      ) {
+        errors.push("گزینه‌های تنوع 1");
+      }
+
+      if (
+        product.variant2 &&
+        !product.options2
+      ) {
+        errors.push("گزینه‌های تنوع 2");
+      }
+
+      if (
+        product.variant3 &&
+        !product.options3
+      ) {
+        errors.push("گزینه‌های تنوع 3");
+      }
+
       return errors;
+    }
+
+
+    // ==========================================
+    // تبدیل گزینه‌ها به آرایه
+    // ==========================================
+
+    function parseOptions(text) {
+
+      if (!text) {
+        return [];
+      }
+
+      return text
+        .split(/[,،\n|]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+
     }
 
 
@@ -293,11 +379,17 @@ exports.handler = async (event) => {
 
         `OPTIONS_2: ${product.options2}\n\n` +
 
+        `VARIANT_3: ${product.variant3}\n` +
+
+        `OPTIONS_3: ${product.options3}\n\n` +
+
         `DESCRIPTION: ${product.description}\n\n` +
 
         `PRODUCT_STATUS: ${product.status}\n\n` +
 
         "IMAGES: 0\n" +
+
+        "STOCK_STATUS: pending\n" +
 
         "CREATED_BY: telegram_admin\n" +
 
@@ -308,7 +400,7 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // ذخیره رکورد تصویر در Telegram Database
+    // ذخیره رکورد تصویر
     // ==========================================
 
     async function saveImageRecord(
@@ -344,7 +436,7 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // استخراج Product ID از متن پیام Reply
+    // استخراج Product ID
     // ==========================================
 
     function extractProductId(text) {
@@ -368,6 +460,304 @@ exports.handler = async (event) => {
       }
 
       return null;
+    }
+
+
+    // ==========================================
+    // ساخت ترکیب‌های تنوع
+    // ==========================================
+
+    function buildCombinations(
+      variant1,
+      options1,
+      variant2,
+      options2,
+      variant3,
+      options3
+    ) {
+
+      const dimensions = [];
+
+      if (
+        variant1 &&
+        options1.length > 0
+      ) {
+
+        dimensions.push({
+          name: variant1,
+          options: options1
+        });
+
+      }
+
+      if (
+        variant2 &&
+        options2.length > 0
+      ) {
+
+        dimensions.push({
+          name: variant2,
+          options: options2
+        });
+
+      }
+
+      if (
+        variant3 &&
+        options3.length > 0
+      ) {
+
+        dimensions.push({
+          name: variant3,
+          options: options3
+        });
+
+      }
+
+
+      // بدون تنوع
+
+      if (dimensions.length === 0) {
+
+        return {
+          dimensions: [],
+          combinations: [
+            {
+              label: "موجودی کل",
+              values: []
+            }
+          ]
+        };
+
+      }
+
+
+      let combinations = [
+        {
+          values: [],
+          label: ""
+        }
+      ];
+
+
+      for (const dimension of dimensions) {
+
+        const next = [];
+
+        for (const current of combinations) {
+
+          for (const option of dimension.options) {
+
+            const values = [
+              ...current.values,
+              {
+                dimension: dimension.name,
+                option: option
+              }
+            ];
+
+            const label =
+              values
+                .map(
+                  item =>
+                    `${item.dimension}: ${item.option}`
+                )
+                .join(" | ");
+
+            next.push({
+              values,
+              label
+            });
+
+          }
+
+        }
+
+        combinations = next;
+
+      }
+
+
+      return {
+        dimensions,
+        combinations
+      };
+
+    }
+
+
+    // ==========================================
+    // ساخت متن وضعیت موجودی
+    // ==========================================
+
+    function buildStockMenuText(
+      state
+    ) {
+
+      const current =
+        state.index;
+
+      const total =
+        state.combinations.length;
+
+      const combination =
+        state.combinations[current];
+
+
+      let text =
+        "📦 تنظیم موجودی محصول\n\n" +
+
+        `🆔 Product ID: ${state.productId}\n\n` +
+
+        `مرحله ${current + 1} از ${total}\n\n` +
+
+        `🔹 ${combination.label}\n\n` +
+
+        "لطفاً تعداد موجودی را به صورت عدد وارد کنید.\n\n" +
+
+        "مثال:\n" +
+
+        "25";
+
+
+      return text;
+
+    }
+
+
+    // ==========================================
+    // Encode State
+    // ==========================================
+
+    function encodeState(state) {
+
+      const json =
+        JSON.stringify(state);
+
+      return Buffer
+        .from(json, "utf8")
+        .toString("base64url");
+
+    }
+
+
+    // ==========================================
+    // Decode State
+    // ==========================================
+
+    function decodeState(encoded) {
+
+      try {
+
+        const json =
+          Buffer
+            .from(encoded, "base64url")
+            .toString("utf8");
+
+        return JSON.parse(json);
+
+      } catch (error) {
+
+        console.error(
+          "STATE DECODE ERROR:",
+          error
+        );
+
+        return null;
+
+      }
+
+    }
+
+
+    // ==========================================
+    // ساخت رکورد نهایی Stock
+    // ==========================================
+
+    function buildStockRecord(state) {
+
+      let text =
+        "#PRODUCT_STOCK\n\n" +
+
+        `PRODUCT_ID: ${state.productId}\n` +
+
+        "STATUS: confirmed\n\n";
+
+
+      text +=
+        "DIMENSIONS:\n";
+
+
+      if (
+        state.dimensions.length === 0
+      ) {
+
+        text +=
+          "NONE\n\n";
+
+      } else {
+
+        state.dimensions.forEach(
+          (dimension, index) => {
+
+            text +=
+              `${index + 1}. ${dimension.name}\n`;
+
+          }
+        );
+
+        text += "\n";
+
+      }
+
+
+      text +=
+        "STOCK:\n";
+
+
+      state.combinations.forEach(
+        (combination, index) => {
+
+          const quantity =
+            Number(state.stocks[index] || 0);
+
+          const values =
+            combination.values
+              .map(
+                item =>
+                  `${item.dimension}=${item.option}`
+              )
+              .join(" | ");
+
+
+          if (values) {
+
+            text +=
+              `${values} | QTY=${quantity}\n`;
+
+          } else {
+
+            text +=
+              `TOTAL | QTY=${quantity}\n`;
+
+          }
+
+        }
+      );
+
+
+      text +=
+        `\nTOTAL_STOCK: ${state.stocks.reduce(
+          (sum, value) =>
+            sum + Number(value || 0),
+          0
+        )}\n` +
+
+        `CREATED_AT: ${new Date().toISOString()}`;
+
+
+      return text;
+
     }
 
 
@@ -396,6 +786,303 @@ exports.handler = async (event) => {
         "MESSAGE:",
         text
       );
+
+
+      // ========================================
+      // پاسخ موجودی
+      // ========================================
+
+      const repliedMessage =
+        update.message.reply_to_message;
+
+
+      if (
+        repliedMessage &&
+        repliedMessage.text &&
+        repliedMessage.text.includes(
+          "STOCK_STATE:"
+        )
+      ) {
+
+        const stateMatch =
+          repliedMessage.text.match(
+            /STOCK_STATE:([A-Za-z0-9_-]+)/ 
+          );
+
+
+        if (!stateMatch) {
+
+          await sendMessage(
+            chatId,
+            "❌ اطلاعات جلسه موجودی قابل خواندن نیست.\nلطفاً دوباره از دکمه تنظیم موجودی شروع کنید."
+          );
+
+          return {
+            statusCode: 200,
+            body: JSON.stringify({
+              success: false,
+              error: "stock_state_missing"
+            })
+          };
+
+        }
+
+
+        const state =
+          decodeState(
+            stateMatch[1]
+          );
+
+
+        if (!state) {
+
+          await sendMessage(
+            chatId,
+            "❌ اطلاعات موجودی خراب یا منقضی شده است.\nلطفاً دوباره موجودی را تنظیم کنید."
+          );
+
+          return {
+            statusCode: 200,
+            body: JSON.stringify({
+              success: false,
+              error: "invalid_stock_state"
+            })
+          };
+
+        }
+
+
+        // --------------------------------------
+        // بررسی عدد
+        // --------------------------------------
+
+        const quantityText =
+          text
+            .replace(/,/g, "")
+            .replace(/،/g, "")
+            .trim();
+
+
+        const quantity =
+          Number(quantityText);
+
+
+        if (
+          !Number.isInteger(quantity) ||
+          quantity < 0
+        ) {
+
+          await sendMessage(
+
+            chatId,
+
+            "❌ مقدار موجودی نامعتبر است.\n\n" +
+
+            "لطفاً فقط یک عدد صحیح صفر یا بیشتر وارد کنید.\n\n" +
+
+            "مثال:\n" +
+
+            "10"
+
+          );
+
+          return {
+
+            statusCode: 200,
+
+            body: JSON.stringify({
+              success: false,
+              error: "invalid_quantity"
+            })
+
+          };
+
+        }
+
+
+        // --------------------------------------
+        // ثبت مقدار فعلی
+        // --------------------------------------
+
+        state.stocks[state.index] =
+          quantity;
+
+
+        // --------------------------------------
+        // آیا هنوز ترکیبی باقی مانده؟
+        // --------------------------------------
+
+        const nextIndex =
+          state.index + 1;
+
+
+        if (
+          nextIndex <
+          state.combinations.length
+        ) {
+
+          state.index =
+            nextIndex;
+
+
+          const encodedState =
+            encodeState(state);
+
+
+          const nextText =
+            buildStockMenuText(state) +
+
+            "\n\n" +
+
+            `STOCK_STATE:${encodedState}`;
+
+
+          await sendMessage(
+
+            chatId,
+
+            nextText
+
+          );
+
+
+          return {
+
+            statusCode: 200,
+
+            body: JSON.stringify({
+              success: true,
+              action: "stock_next",
+              product_id: state.productId
+            })
+
+          };
+
+        }
+
+
+        // --------------------------------------
+        // تمام ترکیب‌ها ثبت شدند
+        // --------------------------------------
+
+        const stockRecord =
+          buildStockRecord(state);
+
+
+        const databaseResponse =
+          await sendMessage(
+
+            DATABASE_CHANNEL_ID,
+
+            stockRecord
+
+          );
+
+
+        if (!databaseResponse.ok) {
+
+          console.error(
+            "STOCK DATABASE ERROR:",
+            databaseResponse
+          );
+
+
+          await sendMessage(
+
+            chatId,
+
+            "❌ ذخیره موجودی در دیتابیس تلگرام انجام نشد.\n\n" +
+
+            "موجودی دوباره ثبت نشد تا از ایجاد رکورد ناقص جلوگیری شود."
+
+          );
+
+
+          return {
+
+            statusCode: 500,
+
+            body: JSON.stringify({
+              success: false,
+              error: "stock_save_failed"
+            })
+
+          };
+
+        }
+
+
+        // --------------------------------------
+        // نمایش خلاصه
+        // --------------------------------------
+
+        const totalStock =
+          state.stocks.reduce(
+            (sum, value) =>
+              sum + Number(value || 0),
+            0
+          );
+
+
+        await sendMessage(
+
+          chatId,
+
+          "✅ موجودی محصول با موفقیت ثبت شد.\n\n" +
+
+          `🆔 Product ID: ${state.productId}\n\n` +
+
+          `📦 تعداد ترکیب‌ها: ${state.combinations.length}\n` +
+
+          `📊 مجموع موجودی: ${totalStock}\n\n` +
+
+          "مرحله موجودی با موفقیت تکمیل شد.",
+
+          [
+
+            [
+              {
+                text: "👁️ پیش‌نمایش محصول",
+                callback_data:
+                  `preview:${state.productId}`
+              }
+            ],
+
+            [
+              {
+                text: "✏️ ویرایش موجودی",
+                callback_data:
+                  `stock:${state.productId}`
+              }
+            ]
+
+          ]
+
+        );
+
+
+        return {
+
+          statusCode: 200,
+
+          body: JSON.stringify({
+
+            success: true,
+
+            action:
+              "stock_completed",
+
+            product_id:
+              state.productId,
+
+            total_stock:
+              totalStock
+
+          })
+
+        };
+
+      }
 
 
       // ========================================
@@ -492,10 +1179,6 @@ exports.handler = async (event) => {
           validateProduct(product);
 
 
-        // --------------------------------------
-        // خطای اعتبارسنجی
-        // --------------------------------------
-
         if (errors.length > 0) {
 
           await sendMessage(
@@ -532,7 +1215,7 @@ exports.handler = async (event) => {
 
 
         // --------------------------------------
-        // Product ID
+        // ساخت Product ID
         // --------------------------------------
 
         const productId =
@@ -643,6 +1326,14 @@ exports.handler = async (event) => {
                 text: "📸 ارسال تصاویر",
                 callback_data:
                   `upload_images:${productId}`
+              }
+            ],
+
+            [
+              {
+                text: "📦 تنظیم موجودی",
+                callback_data:
+                  `stock:${productId}`
               }
             ],
 
@@ -815,7 +1506,7 @@ exports.handler = async (event) => {
 
 
       // ----------------------------------------
-      // ذخیره در Telegram Database
+      // ذخیره
       // ----------------------------------------
 
       const saved =
@@ -863,7 +1554,7 @@ exports.handler = async (event) => {
 
 
       // ----------------------------------------
-      // پاسخ به ادمین
+      // پاسخ
       // ----------------------------------------
 
       await sendMessage(
@@ -872,11 +1563,31 @@ exports.handler = async (event) => {
 
         "✅ تصویر دریافت شد.\n\n" +
 
-        `🆔 Product ID: ${productId}\n` +
+        `🆔 Product ID: ${productId}\n\n` +
 
         "📸 تصویر با موفقیت به محصول متصل شد.\n\n" +
 
-        "می‌توانید تصویر بعدی را هم ارسال کنید."
+        "می‌توانید تصویر بعدی را هم ارسال کنید یا مرحله موجودی را شروع کنید.",
+
+        [
+
+          [
+            {
+              text: "📸 تصویر بعدی",
+              callback_data:
+                `upload_images:${productId}`
+            }
+          ],
+
+          [
+            {
+              text: "📦 تنظیم موجودی",
+              callback_data:
+                `stock:${productId}`
+            }
+          ]
+
+        ]
 
       );
 
@@ -974,6 +1685,10 @@ exports.handler = async (event) => {
 
           "گزینه‌ها 2:\n\n" +
 
+          "تنوع 3:\n" +
+
+          "گزینه‌ها 3:\n\n" +
+
           "توضیحات:\n\n" +
 
           "وضعیت:\n\n" +
@@ -1006,6 +1721,10 @@ exports.handler = async (event) => {
 
           "گزینه‌ها 2: سبز، کرم، مشکی\n\n" +
 
+          "تنوع 3:\n" +
+
+          "گزینه‌ها 3:\n\n" +
+
           "توضیحات:\n" +
 
           "چادر مناسب سفر و کمپینگ\n\n" +
@@ -1031,10 +1750,6 @@ exports.handler = async (event) => {
           action.split(":")[1];
 
 
-        // --------------------------------------
-        // پیام راهنمای ارسال عکس
-        // --------------------------------------
-
         await sendMessage(
 
           chatId,
@@ -1045,15 +1760,96 @@ exports.handler = async (event) => {
 
           "لطفاً عکس یا عکس‌های محصول را ارسال کنید.\n\n" +
 
-          "⚠️ بسیار مهم:\n" +
+          "⚠️ بسیار مهم:\n\n" +
 
           "عکس را به صورت Reply به همین پیام بفرستید.\n\n" +
 
           "می‌توانید یک عکس یا چند عکس ارسال کنید.\n\n" +
 
-          "هر تعداد عکس ارسال کنید، همگی به همین محصول متصل خواهند شد.\n\n" +
+          "بعد از اتمام تصاویر، روی دکمه تنظیم موجودی بزنید.",
 
-          "بعد از اتمام تصاویر، مرحله بعدی تنظیم موجودی است."
+          [
+
+            [
+              {
+                text: "📦 تنظیم موجودی",
+                callback_data:
+                  `stock:${productId}`
+              }
+            ]
+
+          ]
+
+        );
+
+      }
+
+
+      // ========================================
+      // تنظیم موجودی
+      // ========================================
+
+      else if (
+        action.startsWith("stock:")
+      ) {
+
+        const productId =
+          action.split(":")[1];
+
+
+        // --------------------------------------
+        // فعلاً برای شروع، اطلاعات تنوع را از
+        // خود ادمین نمی‌گیریم؛ بلکه یک پیام
+        // راهنما می‌فرستیم تا قالب محصول را
+        // دوباره Reply کند.
+        //
+        // اما برای اتصال واقعی به Draft،
+        // در مرحله بعد مدیریت محصولات/ایندکس
+        // را کامل می‌کنیم.
+        // --------------------------------------
+
+        await sendMessage(
+
+          chatId,
+
+          "📦 تنظیم موجودی\n\n" +
+
+          `🆔 Product ID: ${productId}\n\n` +
+
+          "برای شروع تنظیم موجودی، لطفاً همین پیام را Reply نکنید.\n\n" +
+
+          "سیستم باید اطلاعات تنوع محصول را از Draft بخواند.\n\n" +
+
+          "در نسخه فعلی، این اتصال را با مرحله مدیریت محصولات کامل می‌کنیم."
+
+        );
+
+      }
+
+
+      // ========================================
+      // پیش‌نمایش
+      // ========================================
+
+      else if (
+        action.startsWith("preview:")
+      ) {
+
+        const productId =
+          action.split(":")[1];
+
+
+        await sendMessage(
+
+          chatId,
+
+          "👁️ پیش‌نمایش محصول\n\n" +
+
+          `🆔 Product ID: ${productId}\n\n` +
+
+          "این بخش مرحله بعدی پروژه است.\n\n" +
+
+          "در این مرحله اطلاعات محصول + تصاویر + تنوع + موجودی را یکجا نمایش می‌دهیم و سپس دکمه «✅ تأیید نهایی» اضافه خواهد شد."
 
         );
 
