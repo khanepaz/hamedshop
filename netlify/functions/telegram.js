@@ -21,25 +21,12 @@ exports.handler = async (event) => {
 
     const DATABASE_CHANNEL_ID = "-1004369004122";
 
-    // ==========================================
-    // Netlify Blobs
-    // ==========================================
-
-    const { getStore } = await import("@netlify/blobs");
-
-    const productStore =
-      getStore("hamedshop-products");
-
 
     // ==========================================
     // ارسال پیام
     // ==========================================
 
-    async function sendMessage(
-      chatId,
-      text,
-      keyboard = null
-    ) {
+    async function sendMessage(chatId, text, keyboard = null) {
 
       const body = {
         chat_id: chatId,
@@ -56,9 +43,11 @@ exports.handler = async (event) => {
         `https://api.telegram.org/bot${token}/sendMessage`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify(body)
         }
       );
@@ -94,9 +83,11 @@ exports.handler = async (event) => {
         `https://api.telegram.org/bot${token}/editMessageText`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify(body)
         }
       );
@@ -109,20 +100,19 @@ exports.handler = async (event) => {
     // پاسخ به Callback
     // ==========================================
 
-    async function answerCallbackQuery(
-      callbackQueryId
-    ) {
+    async function answerCallbackQuery(callbackQueryId) {
 
       await fetch(
         `https://api.telegram.org/bot${token}/answerCallbackQuery`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify({
-            callback_query_id:
-              callbackQueryId
+            callback_query_id: callbackQueryId
           })
         }
       );
@@ -142,24 +132,19 @@ exports.handler = async (event) => {
         String(now.getFullYear()).slice(-2);
 
       const mm =
-        String(now.getMonth() + 1)
-          .padStart(2, "0");
+        String(now.getMonth() + 1).padStart(2, "0");
 
       const dd =
-        String(now.getDate())
-          .padStart(2, "0");
+        String(now.getDate()).padStart(2, "0");
 
       const hh =
-        String(now.getHours())
-          .padStart(2, "0");
+        String(now.getHours()).padStart(2, "0");
 
       const min =
-        String(now.getMinutes())
-          .padStart(2, "0");
+        String(now.getMinutes()).padStart(2, "0");
 
       const sec =
-        String(now.getSeconds())
-          .padStart(2, "0");
+        String(now.getSeconds()).padStart(2, "0");
 
       const random =
         Math.floor(Math.random() * 100)
@@ -185,8 +170,7 @@ exports.handler = async (event) => {
 
       for (const rawLine of lines) {
 
-        const line =
-          rawLine.trim();
+        const line = rawLine.trim();
 
         if (!line) {
           continue;
@@ -207,11 +191,9 @@ exports.handler = async (event) => {
           const value =
             match[2].trim();
 
-          currentField =
-            field;
+          currentField = field;
 
-          product[field] =
-            value;
+          product[field] = value;
 
           continue;
         }
@@ -220,8 +202,7 @@ exports.handler = async (event) => {
 
           if (!product[currentField]) {
 
-            product[currentField] =
-              line;
+            product[currentField] = line;
 
           } else {
 
@@ -239,7 +220,7 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // استانداردسازی محصول
+    // استانداردسازی اطلاعات محصول
     // ==========================================
 
     function normalizeProduct(product) {
@@ -320,27 +301,21 @@ exports.handler = async (event) => {
         product.variant1 &&
         !product.options1
       ) {
-        errors.push(
-          "گزینه‌های تنوع 1"
-        );
+        errors.push("گزینه‌های تنوع 1");
       }
 
       if (
         product.variant2 &&
         !product.options2
       ) {
-        errors.push(
-          "گزینه‌های تنوع 2"
-        );
+        errors.push("گزینه‌های تنوع 2");
       }
 
       if (
         product.variant3 &&
         !product.options3
       ) {
-        errors.push(
-          "گزینه‌های تنوع 3"
-        );
+        errors.push("گزینه‌های تنوع 3");
       }
 
       return errors;
@@ -362,222 +337,6 @@ exports.handler = async (event) => {
         .map(item => item.trim())
         .filter(Boolean);
 
-    }
-
-
-    // ==========================================
-    // ساخت Product Record
-    // ==========================================
-
-    function buildProductRecord(
-      product,
-      productId,
-      draftMessageId
-    ) {
-
-      return {
-
-        id:
-          productId,
-
-        name:
-          product.name,
-
-        category:
-          product.category,
-
-        brand:
-          product.brand,
-
-        price:
-          product.price,
-
-        discount:
-          product.discount,
-
-        features:
-          product.features,
-
-        variants: [
-
-          ...(product.variant1
-            ? [{
-                name:
-                  product.variant1,
-                options:
-                  parseOptions(
-                    product.options1
-                  )
-              }]
-            : []),
-
-          ...(product.variant2
-            ? [{
-                name:
-                  product.variant2,
-                options:
-                  parseOptions(
-                    product.options2
-                  )
-              }]
-            : []),
-
-          ...(product.variant3
-            ? [{
-                name:
-                  product.variant3,
-                options:
-                  parseOptions(
-                    product.options3
-                  )
-              }]
-            : [])
-
-        ],
-
-        description:
-          product.description,
-
-        status:
-          product.status,
-
-        workflowStatus:
-          "draft",
-
-        images: [],
-
-        stock: {},
-
-        totalStock: 0,
-
-        draftMessageId:
-          draftMessageId,
-
-        createdBy:
-          "telegram_admin",
-
-        createdAt:
-          new Date().toISOString(),
-
-        updatedAt:
-          new Date().toISOString()
-
-      };
-    }
-
-
-    // ==========================================
-    // ذخیره محصول در Netlify Blobs
-    // ==========================================
-
-    async function saveProduct(
-      product
-    ) {
-
-      return await productStore.setJSON(
-        `products/${product.id}`,
-        product
-      );
-
-    }
-
-
-    // ==========================================
-    // دریافت محصول از Netlify Blobs
-    // ==========================================
-
-    async function getProduct(
-      productId
-    ) {
-
-      if (!productId) {
-        return null;
-      }
-
-      return await productStore.get(
-        `products/${productId}`,
-        {
-          type: "json"
-        }
-      );
-
-    }
-
-
-    // ==========================================
-    // به‌روزرسانی محصول
-    // ==========================================
-
-    async function updateProduct(
-      productId,
-      updater
-    ) {
-
-      const product =
-        await getProduct(
-          productId
-        );
-
-      if (!product) {
-        return null;
-      }
-
-      const updatedProduct =
-        await updater(product);
-
-      updatedProduct.updatedAt =
-        new Date().toISOString();
-
-      await saveProduct(
-        updatedProduct
-      );
-
-      return updatedProduct;
-    }
-
-
-    // ==========================================
-    // لیست محصولات
-    // ==========================================
-
-    async function listProducts() {
-
-      const result =
-        await productStore.list({
-          prefix: "products/"
-        });
-
-      const products = [];
-
-      for (
-        const blob of result.blobs
-      ) {
-
-        const product =
-          await productStore.get(
-            blob.key,
-            {
-              type: "json"
-            }
-          );
-
-        if (product) {
-          products.push(product);
-        }
-
-      }
-
-      products.sort(
-        (a, b) =>
-          new Date(
-            b.createdAt || 0
-          ) -
-          new Date(
-            a.createdAt || 0
-          )
-      );
-
-      return products;
     }
 
 
@@ -639,7 +398,7 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // ذخیره تصویر
+    // ذخیره رکورد تصویر
     // ==========================================
 
     async function saveImageRecord(
@@ -649,60 +408,7 @@ exports.handler = async (event) => {
       mediaGroupId = ""
     ) {
 
-      const imageRecord = {
-
-        fileId:
-          fileId,
-
-        sourceMessageId:
-          messageId,
-
-        mediaGroupId:
-          mediaGroupId,
-
-        createdAt:
-          new Date().toISOString()
-
-      };
-
-
-      const updatedProduct =
-        await updateProduct(
-          productId,
-          async (product) => {
-
-            if (!Array.isArray(
-              product.images
-            )) {
-
-              product.images = [];
-
-            }
-
-            product.images.push(
-              imageRecord
-            );
-
-            return product;
-
-          }
-        );
-
-
-      if (!updatedProduct) {
-
-        return {
-          ok: false,
-          error:
-            "product_not_found"
-        };
-
-      }
-
-
-      // آرشیو در کانال تلگرام
-
-      const archiveText =
+      const imageRecord =
 
         "#PRODUCT_IMAGE\n\n" +
 
@@ -714,14 +420,16 @@ exports.handler = async (event) => {
 
         `MEDIA_GROUP_ID: ${mediaGroupId}\n` +
 
-        `CREATED_AT: ${imageRecord.createdAt}`;
+        `CREATED_AT: ${new Date().toISOString()}`;
 
 
       return await sendMessage(
-        DATABASE_CHANNEL_ID,
-        archiveText
-      );
 
+        DATABASE_CHANNEL_ID,
+
+        imageRecord
+
+      );
     }
 
 
@@ -751,8 +459,11 @@ exports.handler = async (event) => {
 
 
       return await sendMessage(
+
         DATABASE_CHANNEL_ID,
+
         indexRecord
+
       );
     }
 
@@ -768,18 +479,14 @@ exports.handler = async (event) => {
       }
 
       const match =
-        text.match(
-          /Product ID:\s*(P[0-9A-Z-]+)/i
-        );
+        text.match(/Product ID:\s*(P[0-9A-Z-]+)/i);
 
       if (match) {
         return match[1];
       }
 
       const match2 =
-        text.match(
-          /PRODUCT_ID:\s*(P[0-9A-Z-]+)/i
-        );
+        text.match(/PRODUCT_ID:\s*(P[0-9A-Z-]+)/i);
 
       if (match2) {
         return match2[1];
@@ -793,82 +500,92 @@ exports.handler = async (event) => {
     // ساخت ترکیب‌های تنوع
     // ==========================================
 
-    function buildCombinationsFromProduct(
-      product
+    function buildCombinations(
+      variant1,
+      options1,
+      variant2,
+      options2,
+      variant3,
+      options3
     ) {
 
-      const dimensions =
-        Array.isArray(
-          product.variants
-        )
-          ? product.variants
-          : [];
-
+      const dimensions = [];
 
       if (
-        dimensions.length === 0
+        variant1 &&
+        options1.length > 0
       ) {
 
+        dimensions.push({
+          name: variant1,
+          options: options1
+        });
+
+      }
+
+      if (
+        variant2 &&
+        options2.length > 0
+      ) {
+
+        dimensions.push({
+          name: variant2,
+          options: options2
+        });
+
+      }
+
+      if (
+        variant3 &&
+        options3.length > 0
+      ) {
+
+        dimensions.push({
+          name: variant3,
+          options: options3
+        });
+
+      }
+
+
+      if (dimensions.length === 0) {
+
         return {
-
           dimensions: [],
-
           combinations: [
             {
-              label:
-                "موجودی کل",
-
+              label: "موجودی کل",
               values: []
             }
           ]
-
         };
 
       }
 
 
       let combinations = [
-
         {
           values: [],
           label: ""
         }
-
       ];
 
 
-      for (
-        const dimension
-        of dimensions
-      ) {
+      for (const dimension of dimensions) {
 
         const next = [];
 
+        for (const current of combinations) {
 
-        for (
-          const current
-          of combinations
-        ) {
-
-          for (
-            const option
-            of dimension.options || []
-          ) {
+          for (const option of dimension.options) {
 
             const values = [
-
               ...current.values,
-
               {
-                dimension:
-                  dimension.name,
-
-                option:
-                  option
+                dimension: dimension.name,
+                option: option
               }
-
             ];
-
 
             const label =
               values
@@ -878,32 +595,23 @@ exports.handler = async (event) => {
                 )
                 .join(" | ");
 
-
             next.push({
-
               values,
-
               label
-
             });
 
           }
 
         }
 
-
-        combinations =
-          next;
+        combinations = next;
 
       }
 
 
       return {
-
         dimensions,
-
         combinations
-
       };
 
     }
@@ -927,8 +635,7 @@ exports.handler = async (event) => {
         state.combinations[current];
 
 
-      return (
-
+      let text =
         "📦 تنظیم موجودی محصول\n\n" +
 
         `🆔 Product ID: ${state.productId}\n\n` +
@@ -941,9 +648,10 @@ exports.handler = async (event) => {
 
         "مثال:\n" +
 
-        "25"
+        "25";
 
-      );
+
+      return text;
 
     }
 
@@ -952,9 +660,7 @@ exports.handler = async (event) => {
     // Encode State
     // ==========================================
 
-    function encodeState(
-      state
-    ) {
+    function encodeState(state) {
 
       const json =
         JSON.stringify(state);
@@ -970,23 +676,16 @@ exports.handler = async (event) => {
     // Decode State
     // ==========================================
 
-    function decodeState(
-      encoded
-    ) {
+    function decodeState(encoded) {
 
       try {
 
         const json =
           Buffer
-            .from(
-              encoded,
-              "base64url"
-            )
+            .from(encoded, "base64url")
             .toString("utf8");
 
-        return JSON.parse(
-          json
-        );
+        return JSON.parse(json);
 
       } catch (error) {
 
@@ -1006,18 +705,17 @@ exports.handler = async (event) => {
     // ساخت رکورد نهایی Stock
     // ==========================================
 
-    function buildStockRecord(
-      state
-    ) {
+    function buildStockRecord(state) {
 
       let text =
-
         "#PRODUCT_STOCK\n\n" +
 
         `PRODUCT_ID: ${state.productId}\n` +
 
-        "STATUS: confirmed\n\n" +
+        "STATUS: confirmed\n\n";
 
+
+      text +=
         "DIMENSIONS:\n";
 
 
@@ -1052,10 +750,7 @@ exports.handler = async (event) => {
         (combination, index) => {
 
           const quantity =
-            Number(
-              state.stocks[index] || 0
-            );
-
+            Number(state.stocks[index] || 0);
 
           const values =
             combination.values
@@ -1083,7 +778,6 @@ exports.handler = async (event) => {
 
 
       text +=
-
         `\nTOTAL_STOCK: ${state.stocks.reduce(
           (sum, value) =>
             sum + Number(value || 0),
@@ -1094,283 +788,6 @@ exports.handler = async (event) => {
 
 
       return text;
-
-    }
-
-
-    // ==========================================
-    // ساخت Stock Map
-    // ==========================================
-
-    function buildStockMap(
-      state
-    ) {
-
-      const stock = {};
-
-      state.combinations.forEach(
-        (combination, index) => {
-
-          const quantity =
-            Number(
-              state.stocks[index] || 0
-            );
-
-          stock[
-            combination.label
-          ] = quantity;
-
-        }
-      );
-
-      return stock;
-    }
-
-
-    // ==========================================
-    // متن لیست محصولات
-    // ==========================================
-
-    function buildProductsListText(
-      products
-    ) {
-
-      if (
-        products.length === 0
-      ) {
-
-        return (
-
-          "📦 مدیریت محصولات\n\n" +
-
-          "هنوز هیچ محصولی در دیتابیس ثبت نشده است.\n\n" +
-
-          "برای افزودن محصول از گزینه «➕ افزودن محصول» استفاده کنید."
-
-        );
-
-      }
-
-
-      let text =
-
-        "📦 مدیریت محصولات\n\n" +
-
-        `تعداد محصولات: ${products.length}\n\n`;
-
-
-      products
-        .slice(0, 20)
-        .forEach(
-          (product, index) => {
-
-            text +=
-
-              `${index + 1}. ${product.name}\n` +
-
-              `🆔 ${product.id}\n` +
-
-              `💰 ${product.price}\n` +
-
-              `📦 موجودی: ${product.totalStock || 0}\n\n`;
-
-          }
-        );
-
-
-      if (
-        products.length > 20
-      ) {
-
-        text +=
-
-          `\n⚠️ نمایش ۲۰ محصول اول از ${products.length} محصول`;
-
-      }
-
-
-      return text;
-
-    }
-
-
-    // ==========================================
-    // منوی محصولات
-    // ==========================================
-
-    function buildProductsKeyboard(
-      products
-    ) {
-
-      const keyboard = [];
-
-
-      products
-        .slice(0, 20)
-        .forEach(
-          (product) => {
-
-            keyboard.push([
-
-              {
-                text:
-                  `📦 ${product.name}`,
-
-                callback_data:
-                  `manage_product:${product.id}`
-
-              }
-
-            ]);
-
-          }
-        );
-
-
-      keyboard.push([
-
-        {
-          text:
-            "➕ افزودن محصول",
-
-          callback_data:
-            "add_product"
-
-        }
-
-      ]);
-
-
-      keyboard.push([
-
-        {
-          text:
-            "🔙 بازگشت",
-
-          callback_data:
-            "home"
-
-        }
-
-      ]);
-
-
-      return keyboard;
-
-    }
-
-
-    // ==========================================
-    // منوی یک محصول
-    // ==========================================
-
-    function buildProductMenu(
-      product
-    ) {
-
-      return {
-
-        text:
-
-          "📦 مدیریت محصول\n\n" +
-
-          `🆔 ${product.id}\n\n` +
-
-          `نام: ${product.name}\n` +
-
-          `دسته‌بندی: ${product.category}\n` +
-
-          `برند: ${product.brand || "-"}\n\n` +
-
-          `💰 قیمت: ${product.price}\n` +
-
-          `🏷️ تخفیف: ${product.discount || "-"}\n\n` +
-
-          `📸 تصاویر: ${(product.images || []).length}\n` +
-
-          `📦 موجودی: ${product.totalStock || 0}\n\n` +
-
-          `وضعیت: ${product.status}\n` +
-
-          `Workflow: ${product.workflowStatus || "draft"}`,
-
-        keyboard: [
-
-          [
-
-            {
-              text:
-                "👁️ پیش‌نمایش",
-
-              callback_data:
-                `preview:${product.id}`
-
-            }
-
-          ],
-
-          [
-
-            {
-              text:
-                "📸 تصاویر",
-
-              callback_data:
-                `upload_images:${product.id}`
-
-            },
-
-            {
-
-              text:
-                "📦 موجودی",
-
-              callback_data:
-                `stock:${product.id}`
-
-            }
-
-          ],
-
-          [
-
-            {
-              text:
-                "✏️ ویرایش",
-
-              callback_data:
-                `edit_draft:${product.id}`
-
-            },
-
-            {
-
-              text:
-                "❌ لغو Draft",
-
-              callback_data:
-                `cancel_draft:${product.id}`
-
-            }
-
-          ],
-
-          [
-
-            {
-              text:
-                "🔙 بازگشت به محصولات",
-
-              callback_data:
-                "manage_products"
-
-            }
-
-          ]
-
-        ]
-
-      };
 
     }
 
@@ -1427,24 +844,16 @@ exports.handler = async (event) => {
         if (!stateMatch) {
 
           await sendMessage(
-
             chatId,
-
-            "❌ اطلاعات جلسه موجودی قابل خواندن نیست.\n" +
-            "لطفاً دوباره از دکمه تنظیم موجودی شروع کنید."
-
+            "❌ اطلاعات جلسه موجودی قابل خواندن نیست.\nلطفاً دوباره از دکمه تنظیم موجودی شروع کنید."
           );
 
           return {
-
             statusCode: 200,
-
             body: JSON.stringify({
               success: false,
-              error:
-                "stock_state_missing"
+              error: "stock_state_missing"
             })
-
           };
 
         }
@@ -1459,24 +868,16 @@ exports.handler = async (event) => {
         if (!state) {
 
           await sendMessage(
-
             chatId,
-
-            "❌ اطلاعات موجودی خراب یا منقضی شده است.\n\n" +
-            "لطفاً دوباره موجودی را تنظیم کنید."
-
+            "❌ اطلاعات موجودی خراب یا منقضی شده است.\nلطفاً دوباره موجودی را تنظیم کنید."
           );
 
           return {
-
             statusCode: 200,
-
             body: JSON.stringify({
               success: false,
-              error:
-                "invalid_stock_state"
+              error: "invalid_stock_state"
             })
-
           };
 
         }
@@ -1490,9 +891,7 @@ exports.handler = async (event) => {
 
 
         const quantity =
-          Number(
-            quantityText
-          );
+          Number(quantityText);
 
 
         if (
@@ -1520,8 +919,7 @@ exports.handler = async (event) => {
 
             body: JSON.stringify({
               success: false,
-              error:
-                "invalid_quantity"
+              error: "invalid_quantity"
             })
 
           };
@@ -1537,10 +935,6 @@ exports.handler = async (event) => {
           state.index + 1;
 
 
-        // ======================================
-        // مرحله بعد
-        // ======================================
-
         if (
           nextIndex <
           state.combinations.length
@@ -1551,16 +945,11 @@ exports.handler = async (event) => {
 
 
           const encodedState =
-            encodeState(
-              state
-            );
+            encodeState(state);
 
 
           const nextText =
-
-            buildStockMenuText(
-              state
-            ) +
+            buildStockMenuText(state) +
 
             "\n\n" +
 
@@ -1581,15 +970,9 @@ exports.handler = async (event) => {
             statusCode: 200,
 
             body: JSON.stringify({
-
               success: true,
-
-              action:
-                "stock_next",
-
-              product_id:
-                state.productId
-
+              action: "stock_next",
+              product_id: state.productId
             })
 
           };
@@ -1597,14 +980,8 @@ exports.handler = async (event) => {
         }
 
 
-        // ======================================
-        // پایان موجودی
-        // ======================================
-
         const stockRecord =
-          buildStockRecord(
-            state
-          );
+          buildStockRecord(state);
 
 
         const databaseResponse =
@@ -1617,9 +994,7 @@ exports.handler = async (event) => {
           );
 
 
-        if (
-          !databaseResponse.ok
-        ) {
+        if (!databaseResponse.ok) {
 
           console.error(
             "STOCK DATABASE ERROR:",
@@ -1631,7 +1006,7 @@ exports.handler = async (event) => {
 
             chatId,
 
-            "❌ ذخیره موجودی در آرشیو تلگرام انجام نشد.\n\n" +
+            "❌ ذخیره موجودی در دیتابیس تلگرام انجام نشد.\n\n" +
 
             "موجودی دوباره ثبت نشد تا از ایجاد رکورد ناقص جلوگیری شود."
 
@@ -1644,19 +1019,12 @@ exports.handler = async (event) => {
 
             body: JSON.stringify({
               success: false,
-              error:
-                "stock_save_failed"
+              error: "stock_save_failed"
             })
 
           };
 
         }
-
-
-        const stockMap =
-          buildStockMap(
-            state
-          );
 
 
         const totalStock =
@@ -1665,60 +1033,6 @@ exports.handler = async (event) => {
               sum + Number(value || 0),
             0
           );
-
-
-        // ======================================
-        // ذخیره موجودی در Netlify Blobs
-        // ======================================
-
-        const updatedProduct =
-          await updateProduct(
-
-            state.productId,
-
-            async (product) => {
-
-              product.stock =
-                stockMap;
-
-              product.totalStock =
-                totalStock;
-
-              product.workflowStatus =
-                "stock_confirmed";
-
-              return product;
-
-            }
-
-          );
-
-
-        if (!updatedProduct) {
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ محصول در دیتابیس پیدا نشد.\n\n" +
-
-            "موجودی در آرشیو ثبت شد اما رکورد اصلی محصول به‌روزرسانی نشد."
-
-          );
-
-          return {
-
-            statusCode: 500,
-
-            body: JSON.stringify({
-              success: false,
-              error:
-                "product_update_failed"
-            })
-
-          };
-
-        }
 
 
         await sendMessage(
@@ -1733,47 +1047,24 @@ exports.handler = async (event) => {
 
           `📊 مجموع موجودی: ${totalStock}\n\n` +
 
-          "اطلاعات موجودی در Netlify Blobs نیز ذخیره شد.",
+          "مرحله موجودی با موفقیت تکمیل شد.",
 
           [
 
             [
-
               {
-                text:
-                  "👁️ پیش‌نمایش محصول",
-
+                text: "👁️ پیش‌نمایش محصول",
                 callback_data:
                   `preview:${state.productId}`
-
               }
-
             ],
 
             [
-
               {
-                text:
-                  "✏️ ویرایش موجودی",
-
+                text: "✏️ ویرایش موجودی",
                 callback_data:
                   `stock:${state.productId}`
-
               }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "🔙 مدیریت محصولات",
-
-                callback_data:
-                  "manage_products"
-
-              }
-
             ]
 
           ]
@@ -1809,9 +1100,7 @@ exports.handler = async (event) => {
       // /start
       // ========================================
 
-      if (
-        text === "/start"
-      ) {
+      if (text === "/start") {
 
         await sendMessage(
 
@@ -1819,7 +1108,7 @@ exports.handler = async (event) => {
 
           "🛍️ HamedShop\n\n" +
 
-          "سلام 👋\n\n" +
+          "سلام 👋\n" +
 
           "به پنل مدیریت فروشگاه خوش آمدید.\n\n" +
 
@@ -1828,81 +1117,45 @@ exports.handler = async (event) => {
           [
 
             [
-
               {
-                text:
-                  "➕ افزودن محصول",
-
-                callback_data:
-                  "add_product"
-
+                text: "➕ افزودن محصول",
+                callback_data: "add_product"
               }
-
             ],
 
             [
-
               {
-                text:
-                  "📦 مدیریت محصولات",
-
-                callback_data:
-                  "manage_products"
-
+                text: "📦 مدیریت محصولات",
+                callback_data: "manage_products"
               }
-
             ],
 
             [
-
               {
-                text:
-                  "🏷️ دسته‌بندی‌ها",
-
-                callback_data:
-                  "categories"
-
+                text: "🏷️ دسته‌بندی‌ها",
+                callback_data: "categories"
               }
-
             ],
 
             [
-
               {
-                text:
-                  "⭐ محصولات ویژه",
-
-                callback_data:
-                  "featured"
-
+                text: "⭐ محصولات ویژه",
+                callback_data: "featured"
               }
-
             ],
 
             [
-
               {
-                text:
-                  "🔥 تخفیف‌ها",
-
-                callback_data:
-                  "discounts"
-
+                text: "🔥 تخفیف‌ها",
+                callback_data: "discounts"
               }
-
             ],
 
             [
-
               {
-                text:
-                  "⚙️ تنظیمات",
-
-                callback_data:
-                  "settings"
-
+                text: "⚙️ تنظیمات",
+                callback_data: "settings"
               }
-
             ]
 
           ]
@@ -1917,9 +1170,7 @@ exports.handler = async (event) => {
       // ========================================
 
       else if (
-        text.startsWith(
-          "#PRODUCT"
-        )
+        text.startsWith("#PRODUCT")
       ) {
 
         console.log(
@@ -1928,26 +1179,18 @@ exports.handler = async (event) => {
 
 
         const rawProduct =
-          parseProductTemplate(
-            text
-          );
+          parseProductTemplate(text);
 
 
         const product =
-          normalizeProduct(
-            rawProduct
-          );
+          normalizeProduct(rawProduct);
 
 
         const errors =
-          validateProduct(
-            product
-          );
+          validateProduct(product);
 
 
-        if (
-          errors.length > 0
-        ) {
+        if (errors.length > 0) {
 
           await sendMessage(
 
@@ -1959,8 +1202,7 @@ exports.handler = async (event) => {
 
             errors
               .map(
-                item =>
-                  `🔴 ${item}`
+                item => `🔴 ${item}`
               )
               .join("\n") +
 
@@ -1973,15 +1215,9 @@ exports.handler = async (event) => {
             statusCode: 200,
 
             body: JSON.stringify({
-
               success: false,
-
-              error:
-                "validation_failed",
-
-              fields:
-                errors
-
+              error: "validation_failed",
+              fields: errors
             })
 
           };
@@ -1998,10 +1234,6 @@ exports.handler = async (event) => {
           productId
         );
 
-
-        // ======================================
-        // Draft برای آرشیو تلگرام
-        // ======================================
 
         const draftMessage =
           buildDraftMessage(
@@ -2020,9 +1252,7 @@ exports.handler = async (event) => {
           );
 
 
-        if (
-          !databaseResponse.ok
-        ) {
+        if (!databaseResponse.ok) {
 
           console.error(
             "DATABASE ERROR:",
@@ -2034,7 +1264,7 @@ exports.handler = async (event) => {
 
             chatId,
 
-            "❌ خطا در ذخیره Draft در آرشیو تلگرام."
+            "❌ خطا در ذخیره Draft در دیتابیس تلگرام."
 
           );
 
@@ -2044,12 +1274,8 @@ exports.handler = async (event) => {
             statusCode: 500,
 
             body: JSON.stringify({
-
               success: false,
-
-              error:
-                "database_save_failed"
-
+              error: "database_save_failed"
             })
 
           };
@@ -2061,93 +1287,19 @@ exports.handler = async (event) => {
           databaseResponse.result.message_id;
 
 
-        // ======================================
-        // ساخت Product Record
-        // ======================================
-
-        const productRecord =
-          buildProductRecord(
-
-            product,
-
-            productId,
-
-            draftMessageId
-
-          );
-
-
-        // ======================================
-        // ذخیره در Netlify Blobs
-        // ======================================
-
-        try {
-
-          await saveProduct(
-            productRecord
-          );
-
-        } catch (blobError) {
-
-          console.error(
-            "BLOBS SAVE ERROR:",
-            blobError
-          );
-
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ Draft در آرشیو تلگرام ذخیره شد اما ذخیره محصول در Netlify Blobs ناموفق بود.\n\n" +
-
-            `🆔 Product ID: ${productId}\n\n` +
-
-            "لطفاً قبل از ادامه، خطای Netlify را بررسی کنید."
-
-          );
-
-
-          return {
-
-            statusCode: 500,
-
-            body: JSON.stringify({
-
-              success: false,
-
-              error:
-                "blobs_save_failed",
-
-              product_id:
-                productId
-
-            })
-
-          };
-
-        }
-
-
-        // ======================================
-        // Product Index
-        // ======================================
+        // ========================================
+        // ثبت Product Index
+        // ========================================
 
         const indexResponse =
           await saveProductIndex(
-
             productId,
-
             draftMessageId,
-
             "DRAFT"
-
           );
 
 
-        if (
-          !indexResponse.ok
-        ) {
+        if (!indexResponse.ok) {
 
           console.error(
             "PRODUCT INDEX ERROR:",
@@ -2159,118 +1311,78 @@ exports.handler = async (event) => {
 
             chatId,
 
-            "⚠️ محصول در دیتابیس ذخیره شد اما ثبت Product Index انجام نشد.\n\n" +
+            "⚠️ محصول ذخیره شد اما ثبت Product Index انجام نشد.\n\n" +
 
             `🆔 Product ID: ${productId}\n` +
 
-            `📌 Draft Message ID: ${draftMessageId}`
+            `📌 Draft Message ID: ${draftMessageId}\n\n` +
+
+            "لطفاً این مورد را بررسی کنید."
 
           );
 
         }
 
 
-        // ======================================
-        // پاسخ به ادمین
-        // ======================================
-
         await sendMessage(
 
           chatId,
 
-          "✅ محصول دریافت و در دیتابیس ذخیره شد.\n\n" +
+          "✅ محصول دریافت شد.\n\n" +
 
           "📦 نام محصول:\n" +
-
           `${product.name}\n\n` +
 
           "🆔 Product ID:\n" +
-
           `${productId}\n\n` +
 
           "📂 دسته‌بندی:\n" +
-
           `${product.category}\n\n` +
 
           "💰 قیمت:\n" +
-
           `${product.price}\n\n` +
 
           "📝 وضعیت:\n" +
-
           "Draft\n\n" +
 
           "━━━━━━━━━━━━━━\n\n" +
 
-          "📸 مرحله بعد:\n\n" +
+          "📸 مرحله بعد:\n" +
 
           "ارسال تصاویر محصول",
 
           [
 
             [
-
               {
-                text:
-                  "📸 ارسال تصاویر",
-
+                text: "📸 ارسال تصاویر",
                 callback_data:
                   `upload_images:${productId}`
-
               }
-
             ],
 
             [
-
               {
-                text:
-                  "📦 تنظیم موجودی",
-
+                text: "📦 تنظیم موجودی",
                 callback_data:
                   `stock:${productId}`
-
               }
-
             ],
 
             [
-
               {
-                text:
-                  "👁️ پیش‌نمایش",
-
-                callback_data:
-                  `preview:${productId}`
-
-              }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "✏️ ویرایش اطلاعات",
-
+                text: "✏️ ویرایش اطلاعات",
                 callback_data:
                   `edit_draft:${productId}`
-
               }
-
             ],
 
             [
-
               {
-                text:
-                  "❌ لغو",
-
+                text: "❌ لغو",
                 callback_data:
                   `cancel_draft:${productId}`
-
               }
-
             ]
 
           ]
@@ -2352,18 +1464,13 @@ exports.handler = async (event) => {
 
         );
 
-
         return {
 
           statusCode: 200,
 
           body: JSON.stringify({
-
             success: false,
-
-            error:
-              "photo_without_product"
-
+            error: "photo_without_product"
           })
 
         };
@@ -2389,57 +1496,13 @@ exports.handler = async (event) => {
 
         );
 
-
         return {
 
           statusCode: 200,
 
           body: JSON.stringify({
-
             success: false,
-
-            error:
-              "product_id_not_found"
-
-          })
-
-        };
-
-      }
-
-
-      // بررسی وجود محصول در Blobs
-
-      const product =
-        await getProduct(
-          productId
-        );
-
-
-      if (!product) {
-
-        await sendMessage(
-
-          chatId,
-
-          "❌ این محصول در دیتابیس HamedShop پیدا نشد.\n\n" +
-
-          `Product ID: ${productId}`
-
-        );
-
-
-        return {
-
-          statusCode: 404,
-
-          body: JSON.stringify({
-
-            success: false,
-
-            error:
-              "product_not_found"
-
+            error: "product_id_not_found"
           })
 
         };
@@ -2450,11 +1513,8 @@ exports.handler = async (event) => {
       const photos =
         message.photo;
 
-
       const largestPhoto =
-        photos[
-          photos.length - 1
-        ];
+        photos[photos.length - 1];
 
 
       const fileId =
@@ -2495,38 +1555,18 @@ exports.handler = async (event) => {
 
         );
 
-
         return {
 
           statusCode: 500,
 
           body: JSON.stringify({
-
             success: false,
-
-            error:
-              "image_save_failed"
-
+            error: "image_save_failed"
           })
 
         };
 
       }
-
-
-      const updatedProduct =
-        await getProduct(
-          productId
-        );
-
-
-      const imageCount =
-        updatedProduct &&
-        Array.isArray(
-          updatedProduct.images
-        )
-          ? updatedProduct.images.length
-          : 0;
 
 
       await sendMessage(
@@ -2537,51 +1577,26 @@ exports.handler = async (event) => {
 
         `🆔 Product ID: ${productId}\n\n` +
 
-        `📸 تعداد تصاویر ثبت‌شده: ${imageCount}\n\n` +
+        "📸 تصویر با موفقیت به محصول متصل شد.\n\n" +
 
-        "تصویر با موفقیت در دیتابیس محصول ذخیره شد.\n\n" +
-
-        "می‌توانید تصویر بعدی را ارسال کنید یا مرحله موجودی را شروع کنید.",
+        "می‌توانید تصویر بعدی را هم ارسال کنید یا مرحله موجودی را شروع کنید.",
 
         [
 
           [
-
             {
-              text:
-                "📸 تصویر بعدی",
-
+              text: "📸 تصویر بعدی",
               callback_data:
                 `upload_images:${productId}`
-
             }
-
           ],
 
           [
-
             {
-              text:
-                "📦 تنظیم موجودی",
-
+              text: "📦 تنظیم موجودی",
               callback_data:
                 `stock:${productId}`
-
             }
-
-          ],
-
-          [
-
-            {
-              text:
-                "👁️ پیش‌نمایش",
-
-              callback_data:
-                `preview:${productId}`
-
-            }
-
           ]
 
         ]
@@ -2597,17 +1612,13 @@ exports.handler = async (event) => {
 
           success: true,
 
-          type:
-            "product_image",
+          type: "product_image",
 
           product_id:
             productId,
 
           file_id:
-            fileId,
-
-          image_count:
-            imageCount
+            fileId
 
         })
 
@@ -2620,9 +1631,7 @@ exports.handler = async (event) => {
     // Callback Query
     // ==========================================
 
-    if (
-      update.callback_query
-    ) {
+    if (update.callback_query) {
 
       const callbackQuery =
         update.callback_query;
@@ -2649,115 +1658,10 @@ exports.handler = async (event) => {
 
 
       // ========================================
-      // HOME
-      // ========================================
-
-      if (
-        action === "home"
-      ) {
-
-        await sendMessage(
-
-          chatId,
-
-          "🛍️ HamedShop\n\n" +
-
-          "پنل مدیریت فروشگاه\n\n" +
-
-          "لطفاً یک گزینه را انتخاب کنید:",
-
-          [
-
-            [
-
-              {
-                text:
-                  "➕ افزودن محصول",
-
-                callback_data:
-                  "add_product"
-
-              }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "📦 مدیریت محصولات",
-
-                callback_data:
-                  "manage_products"
-
-              }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "🏷️ دسته‌بندی‌ها",
-
-                callback_data:
-                  "categories"
-
-              }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "⭐ محصولات ویژه",
-
-                callback_data:
-                  "featured"
-
-              }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "🔥 تخفیف‌ها",
-
-                callback_data:
-                  "discounts"
-
-              }
-
-            ],
-
-            [
-
-              {
-                text:
-                  "⚙️ تنظیمات",
-
-                callback_data:
-                  "settings"
-
-              }
-
-            ]
-
-          ]
-
-        );
-
-      }
-
-
-      // ========================================
       // افزودن محصول
       // ========================================
 
-      else if (
+      if (
         action === "add_product"
       ) {
 
@@ -2827,7 +1731,7 @@ exports.handler = async (event) => {
 
           "تنوع 2: رنگ\n" +
 
-          "گزینه‌ها 2: سبز، کرم، مشکی، شیری\n\n" +
+          "گزینه‌ها 2: سبز، کرم، مشکی\n\n" +
 
           "تنوع 3:\n" +
 
@@ -2845,122 +1749,6 @@ exports.handler = async (event) => {
 
 
       // ========================================
-      // مدیریت محصولات
-      // ========================================
-
-      else if (
-        action === "manage_products"
-      ) {
-
-        try {
-
-          const products =
-            await listProducts();
-
-
-          const text =
-            buildProductsListText(
-              products
-            );
-
-
-          const keyboard =
-            buildProductsKeyboard(
-              products
-            );
-
-
-          await sendMessage(
-
-            chatId,
-
-            text,
-
-            keyboard
-
-          );
-
-        } catch (error) {
-
-          console.error(
-            "LIST PRODUCTS ERROR:",
-            error
-          );
-
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ خطا در خواندن محصولات از Netlify Blobs.\n\n" +
-
-            `${error.message}`
-
-          );
-
-        }
-
-      }
-
-
-      // ========================================
-      // انتخاب یک محصول
-      // ========================================
-
-      else if (
-        action.startsWith(
-          "manage_product:"
-        )
-      ) {
-
-        const productId =
-          action.substring(
-            "manage_product:".length
-          );
-
-
-        const product =
-          await getProduct(
-            productId
-          );
-
-
-        if (!product) {
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ محصول پیدا نشد.\n\n" +
-
-            `Product ID: ${productId}`
-
-          );
-
-        } else {
-
-          const menu =
-            buildProductMenu(
-              product
-            );
-
-
-          await sendMessage(
-
-            chatId,
-
-            menu.text,
-
-            menu.keyboard
-
-          );
-
-        }
-
-      }
-
-
-      // ========================================
       // ارسال تصاویر
       // ========================================
 
@@ -2971,90 +1759,40 @@ exports.handler = async (event) => {
       ) {
 
         const productId =
-          action.substring(
-            "upload_images:".length
-          );
+          action.split(":")[1];
 
 
-        const product =
-          await getProduct(
-            productId
-          );
+        await sendMessage(
 
+          chatId,
 
-        if (!product) {
+          "📸 ارسال تصاویر محصول\n\n" +
 
-          await sendMessage(
+          `🆔 Product ID: ${productId}\n\n` +
 
-            chatId,
+          "لطفاً عکس یا عکس‌های محصول را ارسال کنید.\n\n" +
 
-            "❌ محصول پیدا نشد.\n\n" +
+          "⚠️ بسیار مهم:\n\n" +
 
-            `Product ID: ${productId}`
+          "عکس را به صورت Reply به همین پیام بفرستید.\n\n" +
 
-          );
+          "می‌توانید یک عکس یا چند عکس ارسال کنید.\n\n" +
 
-        } else {
+          "بعد از اتمام تصاویر، روی دکمه تنظیم موجودی بزنید.",
 
-          const imageCount =
-            Array.isArray(
-              product.images
-            )
-              ? product.images.length
-              : 0;
-
-
-          await sendMessage(
-
-            chatId,
-
-            "📸 ارسال تصاویر محصول\n\n" +
-
-            `🆔 Product ID: ${productId}\n\n` +
-
-            `📸 تصاویر ثبت‌شده: ${imageCount}\n\n` +
-
-            "لطفاً عکس یا عکس‌های محصول را ارسال کنید.\n\n" +
-
-            "⚠️ بسیار مهم:\n\n" +
-
-            "عکس را به صورت Reply به همین پیام بفرستید.\n\n" +
-
-            "بعد از اتمام تصاویر، روی دکمه تنظیم موجودی بزنید.",
+          [
 
             [
-
-              [
-
-                {
-                  text:
-                    "📦 تنظیم موجودی",
-
-                  callback_data:
-                    `stock:${productId}`
-
-                }
-
-              ],
-
-              [
-
-                {
-                  text:
-                    "👁️ پیش‌نمایش",
-
-                  callback_data:
-                    `preview:${productId}`
-
-                }
-
-              ]
-
+              {
+                text: "📦 تنظیم موجودی",
+                callback_data:
+                  `stock:${productId}`
+              }
             ]
 
-          );
+          ]
 
-        }
+        );
 
       }
 
@@ -3064,119 +1802,35 @@ exports.handler = async (event) => {
       // ========================================
 
       else if (
-        action.startsWith(
-          "stock:"
-        )
+        action.startsWith("stock:")
       ) {
 
         const productId =
-          action.substring(
-            "stock:".length
-          );
+          action.split(":")[1];
 
 
-        const product =
-          await getProduct(
-            productId
-          );
-
-
-        if (!product) {
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ محصول پیدا نشد.\n\n" +
-
-            `Product ID: ${productId}`
-
-          );
-
-          return {
-
-            statusCode: 404,
-
-            body: JSON.stringify({
-
-              success: false,
-
-              error:
-                "product_not_found"
-
-            })
-
-          };
-
-        }
-
-
-        const data =
-          buildCombinationsFromProduct(
-            product
-          );
-
-
-        const existingStock =
-          product.stock || {};
-
-
-        const stocks =
-          data.combinations.map(
-            combination => {
-
-              return Number(
-                existingStock[
-                  combination.label
-                ] || 0
-              );
-
-            }
-          );
-
-
-        const state = {
-
-          productId:
-            productId,
-
-          dimensions:
-            data.dimensions,
-
-          combinations:
-            data.combinations,
-
-          stocks:
-            stocks,
-
-          index:
-            0
-
-        };
-
-
-        const encodedState =
-          encodeState(
-            state
-          );
-
-
-        const stockText =
-
-          buildStockMenuText(
-            state
-          ) +
-
-          "\n\n" +
-
-          `STOCK_STATE:${encodedState}`;
-
+        // فعلاً برای شروع، اطلاعات تنوع را از
+        // خود ادمین نمی‌گیریم؛ بلکه یک پیام
+        // راهنما می‌فرستیم تا قالب محصول را
+        // دوباره Reply کند.
+        //
+        // اما برای اتصال واقعی به Draft،
+        // در مرحله بعد مدیریت محصولات/ایندکس
+        // را کامل می‌کنیم.
 
         await sendMessage(
 
           chatId,
 
-          stockText
+          "📦 تنظیم موجودی\n\n" +
+
+          `🆔 Product ID: ${productId}\n\n` +
+
+          "برای شروع تنظیم موجودی، لطفاً همین پیام را Reply نکنید.\n\n" +
+
+          "سیستم باید اطلاعات تنوع محصول را از Draft بخواند.\n\n" +
+
+          "در نسخه فعلی، این اتصال را با مرحله مدیریت محصولات کامل می‌کنیم."
 
         );
 
@@ -3188,298 +1842,47 @@ exports.handler = async (event) => {
       // ========================================
 
       else if (
-        action.startsWith(
-          "preview:"
-        )
+        action.startsWith("preview:")
       ) {
 
         const productId =
-          action.substring(
-            "preview:".length
-          );
+          action.split(":")[1];
 
 
-        const product =
-          await getProduct(
-            productId
-          );
+        await sendMessage(
 
+          chatId,
 
-        if (!product) {
+          "👁️ پیش‌نمایش محصول\n\n" +
 
-          await sendMessage(
+          `🆔 Product ID: ${productId}\n\n` +
 
-            chatId,
+          "این بخش مرحله بعدی پروژه است.\n\n" +
 
-            "❌ محصول پیدا نشد."
+          "در این مرحله اطلاعات محصول + تصاویر + تنوع + موجودی را یکجا نمایش می‌دهیم و سپس دکمه «✅ تأیید نهایی» اضافه خواهد شد."
 
-          );
-
-        } else {
-
-          let text =
-
-            "👁️ پیش‌نمایش محصول\n\n" +
-
-            `🆔 Product ID: ${product.id}\n\n` +
-
-            `📦 نام: ${product.name}\n` +
-
-            `📂 دسته‌بندی: ${product.category}\n` +
-
-            `🏷️ برند: ${product.brand || "-"}\n\n` +
-
-            `💰 قیمت: ${product.price}\n` +
-
-            `🔥 تخفیف: ${product.discount || "-"}\n\n` +
-
-            `📝 ویژگی‌ها:\n${product.features || "-"}\n\n` +
-
-            `📄 توضیحات:\n${product.description || "-"}\n\n`;
-
-
-          text +=
-            "🔹 تنوع‌ها:\n";
-
-
-          if (
-            product.variants &&
-            product.variants.length
-          ) {
-
-            product.variants.forEach(
-              (variant) => {
-
-                text +=
-
-                  `• ${variant.name}: ` +
-
-                  `${(variant.options || []).join("، ")}\n`;
-
-              }
-            );
-
-          } else {
-
-            text +=
-              "بدون تنوع\n";
-
-          }
-
-
-          text +=
-
-            "\n📸 تصاویر: " +
-
-            `${(product.images || []).length}\n` +
-
-            `📦 موجودی کل: ${product.totalStock || 0}\n\n` +
-
-            `📝 وضعیت: ${product.status}\n` +
-
-            `⚙️ Workflow: ${product.workflowStatus || "draft"}`;
-
-
-          await sendMessage(
-
-            chatId,
-
-            text,
-
-            [
-
-              [
-
-                {
-                  text:
-                    "📸 تصاویر",
-
-                  callback_data:
-                    `upload_images:${product.id}`
-
-                }
-
-              ],
-
-              [
-
-                {
-                  text:
-                    "📦 تنظیم موجودی",
-
-                  callback_data:
-                    `stock:${product.id}`
-
-                }
-
-              ],
-
-              [
-
-                {
-                  text:
-                    "✏️ ویرایش",
-
-                  callback_data:
-                    `edit_draft:${product.id}`
-
-                }
-
-              ],
-
-              [
-
-                {
-                  text:
-                    "🔙 مدیریت محصولات",
-
-                  callback_data:
-                    "manage_products"
-
-                }
-
-              ]
-
-            ]
-
-          );
-
-        }
+        );
 
       }
 
 
       // ========================================
-      // ویرایش Draft
+      // مدیریت محصولات
       // ========================================
 
       else if (
-        action.startsWith(
-          "edit_draft:"
-        )
+        action === "manage_products"
       ) {
 
-        const productId =
-          action.substring(
-            "edit_draft:".length
-          );
+        await sendMessage(
 
+          chatId,
 
-        const product =
-          await getProduct(
-            productId
-          );
+          "📦 مدیریت محصولات\n\n" +
 
+          "این بخش در مرحله بعد ساخته می‌شود."
 
-        if (!product) {
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ محصول پیدا نشد."
-
-          );
-
-        } else {
-
-          await sendMessage(
-
-            chatId,
-
-            "✏️ ویرایش محصول\n\n" +
-
-            `Product ID: ${product.id}\n\n` +
-
-            "در این مرحله اطلاعات فعلی محصول در دیتابیس موجود است.\n\n" +
-
-            "ویرایش کامل فیلدها را در مرحله بعد به همین سیستم اضافه می‌کنیم.",
-
-            [
-
-              [
-
-                {
-                  text:
-                    "🔙 بازگشت",
-
-                  callback_data:
-                    `manage_product:${product.id}`
-
-                }
-
-              ]
-
-            ]
-
-          );
-
-        }
-
-      }
-
-
-      // ========================================
-      // لغو Draft
-      // ========================================
-
-      else if (
-        action.startsWith(
-          "cancel_draft:"
-        )
-      ) {
-
-        const productId =
-          action.substring(
-            "cancel_draft:".length
-          );
-
-
-        const product =
-          await getProduct(
-            productId
-          );
-
-
-        if (!product) {
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ محصول پیدا نشد."
-
-          );
-
-        } else {
-
-          await updateProduct(
-
-            productId,
-
-            async (currentProduct) => {
-
-              currentProduct.workflowStatus =
-                "cancelled";
-
-              return currentProduct;
-
-            }
-
-          );
-
-
-          await sendMessage(
-
-            chatId,
-
-            "❌ محصول به وضعیت لغو شده منتقل شد.\n\n" +
-
-            `🆔 Product ID: ${productId}`
-
-          );
-
-        }
+        );
 
       }
 
@@ -3496,7 +1899,7 @@ exports.handler = async (event) => {
 
           chatId,
 
-          "🏷️ دسته‌بندی‌ها\n\n" +
+          "🏷️ دسته‌بندی‌ها\‎n\n" +
 
           "این بخش در مرحله بعد ساخته می‌شود."
 
@@ -3562,6 +1965,64 @@ exports.handler = async (event) => {
           "⚙️ تنظیمات\n\n" +
 
           "این بخش در مرحله بعد ساخته می‌شود."
+
+        );
+
+      }
+
+
+      // ========================================
+      // ویرایش Draft
+      // ========================================
+
+      else if (
+        action.startsWith(
+          "edit_draft:"
+        )
+      ) {
+
+        const productId =
+          action.split(":")[1];
+
+
+        await sendMessage(
+
+          chatId,
+
+          "✏️ ویرایش محصول\n\n" +
+
+          `Product ID: ${productId}\n\n` +
+
+          "این بخش را در مرحله مدیریت محصولات تکمیل می‌کنیم."
+
+        );
+
+      }
+
+
+      // ========================================
+      // لغو Draft
+      // ========================================
+
+      else if (
+        action.startsWith(
+          "cancel_draft:"
+        )
+      ) {
+
+        const productId =
+          action.split(":")[1];
+
+
+        await sendMessage(
+
+          chatId,
+
+          "❌ درخواست لغو محصول\n\n" +
+
+          `Product ID: ${productId}\n\n` +
+
+          "مدیریت کامل Draftها را در مرحله مدیریت محصولات تکمیل می‌کنیم."
 
         );
 
