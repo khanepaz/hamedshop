@@ -95,41 +95,6 @@ exports.handler = async (event) => {
       return await response.json();
     }
 
-    // ==========================================
-// ذخیره Product Index
-// ==========================================
-
-async function saveProductIndex(
-  productId,
-  messageId,
-  messageType = "DRAFT"
-) {
-
-  const indexRecord =
-
-    "#PRODUCT_INDEX\n\n" +
-
-    `PRODUCT_ID: ${productId}\n` +
-
-    `MESSAGE_ID: ${messageId}\n` +
-
-    `CHANNEL_ID: ${DATABASE_CHANNEL_ID}\n` +
-
-    `MESSAGE_TYPE: ${messageType}\n` +
-
-    `CREATED_AT: ${new Date().toISOString()}`;
-
-
-  return await sendMessage(
-
-    DATABASE_CHANNEL_ID,
-
-    indexRecord
-
-  );
-
-}
-
 
     // ==========================================
     // پاسخ به Callback
@@ -332,8 +297,6 @@ async function saveProductIndex(
         errors.push("وضعیت");
       }
 
-      // اگر نام تنوع وجود دارد، گزینه هم باید وجود داشته باشد
-
       if (
         product.variant1 &&
         !product.options1
@@ -471,6 +434,41 @@ async function saveProductIndex(
 
 
     // ==========================================
+    // ذخیره Product Index
+    // ==========================================
+
+    async function saveProductIndex(
+      productId,
+      messageId,
+      messageType = "DRAFT"
+    ) {
+
+      const indexRecord =
+
+        "#PRODUCT_INDEX\n\n" +
+
+        `PRODUCT_ID: ${productId}\n` +
+
+        `MESSAGE_ID: ${messageId}\n` +
+
+        `CHANNEL_ID: ${DATABASE_CHANNEL_ID}\n` +
+
+        `MESSAGE_TYPE: ${messageType}\n` +
+
+        `CREATED_AT: ${new Date().toISOString()}`;
+
+
+      return await sendMessage(
+
+        DATABASE_CHANNEL_ID,
+
+        indexRecord
+
+      );
+    }
+
+
+    // ==========================================
     // استخراج Product ID
     // ==========================================
 
@@ -549,8 +547,6 @@ async function saveProductIndex(
 
       }
 
-
-      // بدون تنوع
 
       if (dimensions.length === 0) {
 
@@ -841,7 +837,7 @@ async function saveProductIndex(
 
         const stateMatch =
           repliedMessage.text.match(
-            /STOCK_STATE:([A-Za-z0-9_-]+)/ 
+            /STOCK_STATE:([A-Za-z0-9_-]+)/
           );
 
 
@@ -887,10 +883,6 @@ async function saveProductIndex(
         }
 
 
-        // --------------------------------------
-        // بررسی عدد
-        // --------------------------------------
-
         const quantityText =
           text
             .replace(/,/g, "")
@@ -935,17 +927,9 @@ async function saveProductIndex(
         }
 
 
-        // --------------------------------------
-        // ثبت مقدار فعلی
-        // --------------------------------------
-
         state.stocks[state.index] =
           quantity;
 
-
-        // --------------------------------------
-        // آیا هنوز ترکیبی باقی مانده؟
-        // --------------------------------------
 
         const nextIndex =
           state.index + 1;
@@ -996,10 +980,6 @@ async function saveProductIndex(
         }
 
 
-        // --------------------------------------
-        // تمام ترکیب‌ها ثبت شدند
-        // --------------------------------------
-
         const stockRecord =
           buildStockRecord(state);
 
@@ -1046,10 +1026,6 @@ async function saveProductIndex(
 
         }
 
-
-        // --------------------------------------
-        // نمایش خلاصه
-        // --------------------------------------
 
         const totalStock =
           state.stocks.reduce(
@@ -1249,10 +1225,6 @@ async function saveProductIndex(
         }
 
 
-        // --------------------------------------
-        // ساخت Product ID
-        // --------------------------------------
-
         const productId =
           generateProductId();
 
@@ -1263,20 +1235,12 @@ async function saveProductIndex(
         );
 
 
-        // --------------------------------------
-        // ساخت Draft
-        // --------------------------------------
-
         const draftMessage =
           buildDraftMessage(
             product,
             productId
           );
 
-
-        // --------------------------------------
-        // ذخیره Draft
-        // --------------------------------------
 
         const databaseResponse =
           await sendMessage(
@@ -1322,48 +1286,43 @@ async function saveProductIndex(
         const draftMessageId =
           databaseResponse.result.message_id;
 
-// --------------------------------------
-// ذخیره Product Index
-// --------------------------------------
 
-const indexResponse =
-  await saveProductIndex(
+        // ========================================
+        // ثبت Product Index
+        // ========================================
 
-    productId,
-
-    draftMessageId,
-
-    "DRAFT"
-
-  );
+        const indexResponse =
+          await saveProductIndex(
+            productId,
+            draftMessageId,
+            "DRAFT"
+          );
 
 
-if (!indexResponse.ok) {
+        if (!indexResponse.ok) {
 
-  console.error(
-    "PRODUCT INDEX ERROR:",
-    indexResponse
-  );
+          console.error(
+            "PRODUCT INDEX ERROR:",
+            indexResponse
+          );
 
 
-  await sendMessage(
+          await sendMessage(
 
-    chatId,
+            chatId,
 
-    "⚠️ محصول ذخیره شد اما ثبت Product Index انجام نشد.\n\n" +
+            "⚠️ محصول ذخیره شد اما ثبت Product Index انجام نشد.\n\n" +
 
-    `🆔 Product ID: ${productId}\n` +
+            `🆔 Product ID: ${productId}\n` +
 
-    `📌 Draft Message ID: ${draftMessageId}\n\n` +
+            `📌 Draft Message ID: ${draftMessageId}\n\n` +
 
-    "لطفاً این مورد را بررسی کنید."
+            "لطفاً این مورد را بررسی کنید."
 
-  );
+          );
 
-}
-        // --------------------------------------
-        // پاسخ به ادمین
-        // --------------------------------------
+        }
+
 
         await sendMessage(
 
@@ -1489,10 +1448,6 @@ if (!indexResponse.ok) {
       );
 
 
-      // ----------------------------------------
-      // بررسی Reply
-      // ----------------------------------------
-
       const repliedMessage =
         message.reply_to_message;
 
@@ -1522,10 +1477,6 @@ if (!indexResponse.ok) {
 
       }
 
-
-      // ----------------------------------------
-      // پیدا کردن Product ID
-      // ----------------------------------------
 
       const productId =
         extractProductId(
@@ -1559,10 +1510,6 @@ if (!indexResponse.ok) {
       }
 
 
-      // ----------------------------------------
-      // بهترین کیفیت عکس
-      // ----------------------------------------
-
       const photos =
         message.photo;
 
@@ -1577,10 +1524,6 @@ if (!indexResponse.ok) {
       const mediaGroupId =
         message.media_group_id || "";
 
-
-      // ----------------------------------------
-      // ذخیره
-      // ----------------------------------------
 
       const saved =
         await saveImageRecord(
@@ -1625,10 +1568,6 @@ if (!indexResponse.ok) {
 
       }
 
-
-      // ----------------------------------------
-      // پاسخ
-      // ----------------------------------------
 
       await sendMessage(
 
@@ -1870,7 +1809,6 @@ if (!indexResponse.ok) {
           action.split(":")[1];
 
 
-        // --------------------------------------
         // فعلاً برای شروع، اطلاعات تنوع را از
         // خود ادمین نمی‌گیریم؛ بلکه یک پیام
         // راهنما می‌فرستیم تا قالب محصول را
@@ -1879,7 +1817,6 @@ if (!indexResponse.ok) {
         // اما برای اتصال واقعی به Draft،
         // در مرحله بعد مدیریت محصولات/ایندکس
         // را کامل می‌کنیم.
-        // --------------------------------------
 
         await sendMessage(
 
@@ -1962,7 +1899,7 @@ if (!indexResponse.ok) {
 
           chatId,
 
-          "🏷️ دسته‌بندی‌ها\n\n" +
+          "🏷️ دسته‌بندی‌ها\‎n\n" +
 
           "این بخش در مرحله بعد ساخته می‌شود."
 
