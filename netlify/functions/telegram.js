@@ -16,6 +16,7 @@ exports.handler = async (event) => {
     }
 
     const update = JSON.parse(event.body || "{}");
+
     const token = process.env.TELEGRAM_BOT_TOKEN;
 
     const DATABASE_CHANNEL_ID = "-1004369004122";
@@ -42,9 +43,11 @@ exports.handler = async (event) => {
         `https://api.telegram.org/bot${token}/sendMessage`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify(body)
         }
       );
@@ -54,7 +57,7 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // پاسخ به کلیک دکمه
+    // پاسخ به Callback
     // ==========================================
 
     async function answerCallbackQuery(callbackQueryId) {
@@ -63,9 +66,11 @@ exports.handler = async (event) => {
         `https://api.telegram.org/bot${token}/answerCallbackQuery`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json"
           },
+
           body: JSON.stringify({
             callback_query_id: callbackQueryId
           })
@@ -83,31 +88,43 @@ exports.handler = async (event) => {
 
       const now = new Date();
 
-      const yy = String(now.getFullYear()).slice(-2);
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const dd = String(now.getDate()).padStart(2, "0");
+      const yy =
+        String(now.getFullYear()).slice(-2);
 
-      const hh = String(now.getHours()).padStart(2, "0");
-      const min = String(now.getMinutes()).padStart(2, "0");
-      const sec = String(now.getSeconds()).padStart(2, "0");
+      const mm =
+        String(now.getMonth() + 1).padStart(2, "0");
 
-      const random = Math.floor(Math.random() * 100)
-        .toString()
-        .padStart(2, "0");
+      const dd =
+        String(now.getDate()).padStart(2, "0");
+
+      const hh =
+        String(now.getHours()).padStart(2, "0");
+
+      const min =
+        String(now.getMinutes()).padStart(2, "0");
+
+      const sec =
+        String(now.getSeconds()).padStart(2, "0");
+
+      const random =
+        Math.floor(Math.random() * 100)
+          .toString()
+          .padStart(2, "0");
 
       return `P${yy}${mm}${dd}${hh}${min}${sec}${random}`;
     }
 
 
     // ==========================================
-    // استخراج فیلدهای محصول
+    // استخراج قالب محصول
     // ==========================================
 
     function parseProductTemplate(text) {
 
       const product = {};
 
-      const lines = text.split(/\r?\n/);
+      const lines =
+        text.split(/\r?\n/);
 
       let currentField = null;
 
@@ -119,16 +136,21 @@ exports.handler = async (event) => {
           continue;
         }
 
-        // --------------------------------------
-        // فیلدهای تک خطی
-        // --------------------------------------
+        // حذف #PRODUCT
+        if (line === "#PRODUCT") {
+          continue;
+        }
 
-        const match = line.match(/^([^:]+):\s*(.*)$/);
+        const match =
+          line.match(/^([^:]+):\s*(.*)$/);
 
         if (match) {
 
-          const field = match[1].trim();
-          const value = match[2].trim();
+          const field =
+            match[1].trim();
+
+          const value =
+            match[2].trim();
 
           currentField = field;
 
@@ -137,17 +159,17 @@ exports.handler = async (event) => {
           continue;
         }
 
-
-        // --------------------------------------
-        // ادامه فیلدهای چندخطی
-        // --------------------------------------
-
         if (currentField) {
 
           if (!product[currentField]) {
+
             product[currentField] = line;
+
           } else {
-            product[currentField] += "\n" + line;
+
+            product[currentField] +=
+              "\n" + line;
+
           }
 
         }
@@ -159,44 +181,55 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // تبدیل قالب فارسی به ساختار استاندارد
+    // استانداردسازی اطلاعات
     // ==========================================
 
     function normalizeProduct(product) {
 
       return {
 
-        name: product["نام محصول"] || "",
+        name:
+          product["نام محصول"] || "",
 
-        category: product["دسته‌بندی"] || "",
+        category:
+          product["دسته‌بندی"] || "",
 
-        brand: product["برند"] || "",
+        brand:
+          product["برند"] || "",
 
-        price: product["قیمت"] || "",
+        price:
+          product["قیمت"] || "",
 
-        discount: product["تخفیف"] || "",
+        discount:
+          product["تخفیف"] || "",
 
-        features: product["ویژگی‌های محصول"] || "",
+        features:
+          product["ویژگی‌های محصول"] || "",
 
-        variant1: product["تنوع 1"] || "",
+        variant1:
+          product["تنوع 1"] || "",
 
-        options1: product["گزینه‌ها"] || "",
+        options1:
+          product["گزینه‌ها"] || "",
 
-        variant2: product["تنوع 2"] || "",
+        variant2:
+          product["تنوع 2"] || "",
 
-        options2: product["گزینه‌ها 2"] || "",
+        options2:
+          product["گزینه‌ها 2"] || "",
 
-        description: product["توضیحات"] || "",
+        description:
+          product["توضیحات"] || "",
 
-        status: product["وضعیت"] || ""
+        status:
+          product["وضعیت"] || ""
 
       };
-
     }
 
 
     // ==========================================
-    // اعتبارسنجی محصول
+    // اعتبارسنجی
     // ==========================================
 
     function validateProduct(product) {
@@ -224,10 +257,13 @@ exports.handler = async (event) => {
 
 
     // ==========================================
-    // تبدیل Draft به متن دیتابیس
+    // ساخت Draft
     // ==========================================
 
-    function buildDraftMessage(product, productId) {
+    function buildDraftMessage(
+      product,
+      productId
+    ) {
 
       return (
 
@@ -268,27 +304,103 @@ exports.handler = async (event) => {
         `CREATED_AT: ${new Date().toISOString()}`
 
       );
-
     }
 
 
     // ==========================================
-    // /start
+    // ذخیره رکورد تصویر در Telegram Database
     // ==========================================
 
-    if (update.message && update.message.text) {
+    async function saveImageRecord(
+      productId,
+      fileId,
+      messageId,
+      mediaGroupId = ""
+    ) {
 
-      const chatId = update.message.chat.id;
+      const imageRecord =
 
-      const text = update.message.text.trim();
+        "#PRODUCT_IMAGE\n\n" +
 
-      console.log("PRIVATE CHAT ID:", chatId);
-      console.log("MESSAGE:", text);
+        `PRODUCT_ID: ${productId}\n` +
+
+        `FILE_ID: ${fileId}\n` +
+
+        `SOURCE_MESSAGE_ID: ${messageId}\n` +
+
+        `MEDIA_GROUP_ID: ${mediaGroupId}\n` +
+
+        `CREATED_AT: ${new Date().toISOString()}`;
 
 
-      // ----------------------------------------
+      return await sendMessage(
+
+        DATABASE_CHANNEL_ID,
+
+        imageRecord
+
+      );
+    }
+
+
+    // ==========================================
+    // استخراج Product ID از متن پیام Reply
+    // ==========================================
+
+    function extractProductId(text) {
+
+      if (!text) {
+        return null;
+      }
+
+      const match =
+        text.match(/Product ID:\s*(P[0-9A-Z-]+)/i);
+
+      if (match) {
+        return match[1];
+      }
+
+      const match2 =
+        text.match(/PRODUCT_ID:\s*(P[0-9A-Z-]+)/i);
+
+      if (match2) {
+        return match2[1];
+      }
+
+      return null;
+    }
+
+
+    // ==========================================
+    // پیام خصوصی متنی
+    // ==========================================
+
+    if (
+      update.message &&
+      update.message.text
+    ) {
+
+      const chatId =
+        update.message.chat.id;
+
+      const text =
+        update.message.text.trim();
+
+
+      console.log(
+        "PRIVATE CHAT ID:",
+        chatId
+      );
+
+      console.log(
+        "MESSAGE:",
+        text
+      );
+
+
+      // ========================================
       // /start
-      // ----------------------------------------
+      // ========================================
 
       if (text === "/start") {
 
@@ -297,8 +409,11 @@ exports.handler = async (event) => {
           chatId,
 
           "🛍️ HamedShop\n\n" +
+
           "سلام 👋\n" +
+
           "به پنل مدیریت فروشگاه خوش آمدید.\n\n" +
+
           "لطفاً یک گزینه را انتخاب کنید:",
 
           [
@@ -356,26 +471,30 @@ exports.handler = async (event) => {
       // دریافت قالب محصول
       // ========================================
 
-      else if (text.startsWith("#PRODUCT")) {
+      else if (
+        text.startsWith("#PRODUCT")
+      ) {
 
-        console.log("PRODUCT TEMPLATE RECEIVED");
+        console.log(
+          "PRODUCT TEMPLATE RECEIVED"
+        );
+
+
+        const rawProduct =
+          parseProductTemplate(text);
+
+
+        const product =
+          normalizeProduct(rawProduct);
+
+
+        const errors =
+          validateProduct(product);
 
 
         // --------------------------------------
-        // استخراج اطلاعات
+        // خطای اعتبارسنجی
         // --------------------------------------
-
-        const rawProduct = parseProductTemplate(text);
-
-        const product = normalizeProduct(rawProduct);
-
-
-        // --------------------------------------
-        // اعتبارسنجی
-        // --------------------------------------
-
-        const errors = validateProduct(product);
-
 
         if (errors.length > 0) {
 
@@ -388,7 +507,9 @@ exports.handler = async (event) => {
             "فیلدهای زیر باید تکمیل شوند:\n\n" +
 
             errors
-              .map(item => `🔴 ${item}`)
+              .map(
+                item => `🔴 ${item}`
+              )
               .join("\n") +
 
             "\n\nلطفاً قالب را اصلاح و دوباره ارسال کنید."
@@ -411,13 +532,17 @@ exports.handler = async (event) => {
 
 
         // --------------------------------------
-        // ساخت Product ID
+        // Product ID
         // --------------------------------------
 
-        const productId = generateProductId();
+        const productId =
+          generateProductId();
 
 
-        console.log("NEW PRODUCT ID:", productId);
+        console.log(
+          "NEW PRODUCT ID:",
+          productId
+        );
 
 
         // --------------------------------------
@@ -425,20 +550,24 @@ exports.handler = async (event) => {
         // --------------------------------------
 
         const draftMessage =
-          buildDraftMessage(product, productId);
+          buildDraftMessage(
+            product,
+            productId
+          );
 
 
         // --------------------------------------
-        // ذخیره Draft در کانال دیتابیس
+        // ذخیره Draft
         // --------------------------------------
 
-        const databaseResponse = await sendMessage(
+        const databaseResponse =
+          await sendMessage(
 
-          DATABASE_CHANNEL_ID,
+            DATABASE_CHANNEL_ID,
 
-          draftMessage
+            draftMessage
 
-        );
+          );
 
 
         if (!databaseResponse.ok) {
@@ -448,15 +577,15 @@ exports.handler = async (event) => {
             databaseResponse
           );
 
+
           await sendMessage(
 
             chatId,
 
-            "❌ خطا در ذخیره محصول در دیتابیس تلگرام.\n\n" +
-            "Product ID ساخته شد اما Draft ذخیره نشد.\n" +
-            "لطفاً دوباره تلاش کنید."
+            "❌ خطا در ذخیره Draft در دیتابیس تلگرام."
 
           );
+
 
           return {
 
@@ -484,7 +613,7 @@ exports.handler = async (event) => {
 
           chatId,
 
-          "✅ محصول با موفقیت دریافت شد.\n\n" +
+          "✅ محصول دریافت شد.\n\n" +
 
           "📦 نام محصول:\n" +
           `${product.name}\n\n` +
@@ -504,32 +633,32 @@ exports.handler = async (event) => {
           "━━━━━━━━━━━━━━\n\n" +
 
           "📸 مرحله بعد:\n" +
-          "ارسال تصاویر محصول\n\n" +
 
-          "می‌توانید یک یا چند تصویر ارسال کنید.\n\n" +
-
-          `🔐 Draft Message ID: ${draftMessageId}`,
+          "ارسال تصاویر محصول",
 
           [
 
             [
               {
                 text: "📸 ارسال تصاویر",
-                callback_data: `upload_images:${productId}`
+                callback_data:
+                  `upload_images:${productId}`
               }
             ],
 
             [
               {
                 text: "✏️ ویرایش اطلاعات",
-                callback_data: `edit_draft:${productId}`
+                callback_data:
+                  `edit_draft:${productId}`
               }
             ],
 
             [
               {
                 text: "❌ لغو",
-                callback_data: `cancel_draft:${productId}`
+                callback_data:
+                  `cancel_draft:${productId}`
               }
             ]
 
@@ -546,11 +675,14 @@ exports.handler = async (event) => {
 
             success: true,
 
-            action: "product_draft_created",
+            action:
+              "product_draft_created",
 
-            product_id: productId,
+            product_id:
+              productId,
 
-            draft_message_id: draftMessageId
+            draft_message_id:
+              draftMessageId
 
           })
 
@@ -558,10 +690,6 @@ exports.handler = async (event) => {
 
       }
 
-
-      // ========================================
-      // سایر پیام‌ها
-      // ========================================
 
       return {
 
@@ -577,14 +705,216 @@ exports.handler = async (event) => {
 
 
     // ==========================================
+    // دریافت عکس
+    // ==========================================
+
+    if (
+      update.message &&
+      update.message.photo
+    ) {
+
+      const message =
+        update.message;
+
+      const chatId =
+        message.chat.id;
+
+
+      console.log(
+        "PHOTO RECEIVED"
+      );
+
+
+      // ----------------------------------------
+      // بررسی Reply
+      // ----------------------------------------
+
+      const repliedMessage =
+        message.reply_to_message;
+
+
+      if (!repliedMessage) {
+
+        await sendMessage(
+
+          chatId,
+
+          "⚠️ این تصویر به هیچ محصولی متصل نیست.\n\n" +
+
+          "لطفاً ابتدا روی دکمه «📸 ارسال تصاویر» محصول موردنظر بزنید و سپس عکس را در پاسخ به پیام درخواست تصاویر ارسال کنید."
+
+        );
+
+        return {
+
+          statusCode: 200,
+
+          body: JSON.stringify({
+            success: false,
+            error: "photo_without_product"
+          })
+
+        };
+
+      }
+
+
+      // ----------------------------------------
+      // پیدا کردن Product ID
+      // ----------------------------------------
+
+      const productId =
+        extractProductId(
+          repliedMessage.text
+        );
+
+
+      if (!productId) {
+
+        await sendMessage(
+
+          chatId,
+
+          "❌ نتوانستم Product ID این تصویر را تشخیص بدهم.\n\n" +
+
+          "لطفاً از دکمه «📸 ارسال تصاویر» همان محصول استفاده کنید."
+
+        );
+
+        return {
+
+          statusCode: 200,
+
+          body: JSON.stringify({
+            success: false,
+            error: "product_id_not_found"
+          })
+
+        };
+
+      }
+
+
+      // ----------------------------------------
+      // بهترین کیفیت عکس
+      // ----------------------------------------
+
+      const photos =
+        message.photo;
+
+      const largestPhoto =
+        photos[photos.length - 1];
+
+
+      const fileId =
+        largestPhoto.file_id;
+
+
+      const mediaGroupId =
+        message.media_group_id || "";
+
+
+      // ----------------------------------------
+      // ذخیره در Telegram Database
+      // ----------------------------------------
+
+      const saved =
+        await saveImageRecord(
+
+          productId,
+
+          fileId,
+
+          message.message_id,
+
+          mediaGroupId
+
+        );
+
+
+      if (!saved.ok) {
+
+        console.error(
+          "IMAGE SAVE ERROR:",
+          saved
+        );
+
+
+        await sendMessage(
+
+          chatId,
+
+          "❌ ذخیره تصویر انجام نشد.\nلطفاً دوباره تلاش کنید."
+
+        );
+
+        return {
+
+          statusCode: 500,
+
+          body: JSON.stringify({
+            success: false,
+            error: "image_save_failed"
+          })
+
+        };
+
+      }
+
+
+      // ----------------------------------------
+      // پاسخ به ادمین
+      // ----------------------------------------
+
+      await sendMessage(
+
+        chatId,
+
+        "✅ تصویر دریافت شد.\n\n" +
+
+        `🆔 Product ID: ${productId}\n` +
+
+        "📸 تصویر با موفقیت به محصول متصل شد.\n\n" +
+
+        "می‌توانید تصویر بعدی را هم ارسال کنید."
+
+      );
+
+
+      return {
+
+        statusCode: 200,
+
+        body: JSON.stringify({
+
+          success: true,
+
+          type: "product_image",
+
+          product_id:
+            productId,
+
+          file_id:
+            fileId
+
+        })
+
+      };
+
+    }
+
+
+    // ==========================================
     // Callback Query
     // ==========================================
 
     if (update.callback_query) {
 
-      const callbackQuery = update.callback_query;
+      const callbackQuery =
+        update.callback_query;
 
-      const callbackQueryId = callbackQuery.id;
+      const callbackQueryId =
+        callbackQuery.id;
 
       const chatId =
         callbackQuery.message.chat.id;
@@ -593,7 +923,10 @@ exports.handler = async (event) => {
         callbackQuery.data;
 
 
-      console.log("BUTTON:", action);
+      console.log(
+        "BUTTON:",
+        action
+      );
 
 
       await answerCallbackQuery(
@@ -601,11 +934,13 @@ exports.handler = async (event) => {
       );
 
 
-      // ----------------------------------------
+      // ========================================
       // افزودن محصول
-      // ----------------------------------------
+      // ========================================
 
-      if (action === "add_product") {
+      if (
+        action === "add_product"
+      ) {
 
         await sendMessage(
 
@@ -617,23 +952,26 @@ exports.handler = async (event) => {
 
           "📝 لطفاً قالب محصول را ارسال کنید.\n\n" +
 
-          "قالب:\n\n" +
-
           "#PRODUCT\n\n" +
 
           "نام محصول:\n" +
+
           "دسته‌بندی:\n" +
+
           "برند:\n\n" +
 
           "قیمت:\n" +
+
           "تخفیف:\n\n" +
 
           "ویژگی‌های محصول:\n\n" +
 
           "تنوع 1:\n" +
+
           "گزینه‌ها:\n\n" +
 
           "تنوع 2:\n" +
+
           "گزینه‌ها 2:\n\n" +
 
           "توضیحات:\n\n" +
@@ -647,22 +985,29 @@ exports.handler = async (event) => {
           "#PRODUCT\n\n" +
 
           "نام محصول: چادر مسافرتی مدل X\n" +
+
           "دسته‌بندی: لوازم سفر / چادر\n" +
+
           "برند: ABC\n\n" +
 
           "قیمت: 3500000\n" +
+
           "تخفیف:\n\n" +
 
           "ویژگی‌های محصول:\n" +
+
           "ضدآب، دو نفره، سبک\n\n" +
 
           "تنوع 1: قد\n" +
+
           "گزینه‌ها: 150، 160، 170، 180\n\n" +
 
           "تنوع 2: رنگ\n" +
+
           "گزینه‌ها 2: سبز، کرم، مشکی\n\n" +
 
           "توضیحات:\n" +
+
           "چادر مناسب سفر و کمپینگ\n\n" +
 
           "وضعیت: فعال"
@@ -672,106 +1017,23 @@ exports.handler = async (event) => {
       }
 
 
-      // ----------------------------------------
-      // مدیریت محصولات
-      // ----------------------------------------
-
-      else if (action === "manage_products") {
-
-        await sendMessage(
-
-          chatId,
-
-          "📦 مدیریت محصولات\n\n" +
-          "این بخش در مرحله بعد ساخته می‌شود."
-
-        );
-
-      }
-
-
-      // ----------------------------------------
-      // دسته‌بندی
-      // ----------------------------------------
-
-      else if (action === "categories") {
-
-        await sendMessage(
-
-          chatId,
-
-          "🏷️ دسته‌بندی‌ها\n\n" +
-          "این بخش در مرحله بعد ساخته می‌شود."
-
-        );
-
-      }
-
-
-      // ----------------------------------------
-      // ویژه
-      // ----------------------------------------
-
-      else if (action === "featured") {
-
-        await sendMessage(
-
-          chatId,
-
-          "⭐ محصولات ویژه\n\n" +
-          "این بخش در مرحله بعد ساخته می‌شود."
-
-        );
-
-      }
-
-
-      // ----------------------------------------
-      // تخفیف
-      // ----------------------------------------
-
-      else if (action === "discounts") {
-
-        await sendMessage(
-
-          chatId,
-
-          "🔥 تخفیف‌ها\n\n" +
-          "این بخش در مرحله بعد ساخته می‌شود."
-
-        );
-
-      }
-
-
-      // ----------------------------------------
-      // تنظیمات
-      // ----------------------------------------
-
-      else if (action === "settings") {
-
-        await sendMessage(
-
-          chatId,
-
-          "⚙️ تنظیمات\n\n" +
-          "این بخش در مرحله بعد ساخته می‌شود."
-
-        );
-
-      }
-
-
-      // ----------------------------------------
+      // ========================================
       // ارسال تصاویر
-      // ----------------------------------------
+      // ========================================
 
       else if (
-        action.startsWith("upload_images:")
+        action.startsWith(
+          "upload_images:"
+        )
       ) {
 
         const productId =
           action.split(":")[1];
+
+
+        // --------------------------------------
+        // پیام راهنمای ارسال عکس
+        // --------------------------------------
 
         await sendMessage(
 
@@ -781,27 +1043,141 @@ exports.handler = async (event) => {
 
           `🆔 Product ID: ${productId}\n\n` +
 
-          "لطفاً یک یا چند تصویر محصول را ارسال کنید.\n\n" +
+          "لطفاً عکس یا عکس‌های محصول را ارسال کنید.\n\n" +
 
-          "می‌توانید تصاویر را به صورت تکی یا چندتایی ارسال کنید.\n\n" +
+          "⚠️ بسیار مهم:\n" +
 
-          "بعد از دریافت تصاویر، وارد مرحله تنظیم موجودی می‌شویم."
+          "عکس را به صورت Reply به همین پیام بفرستید.\n\n" +
+
+          "می‌توانید یک عکس یا چند عکس ارسال کنید.\n\n" +
+
+          "هر تعداد عکس ارسال کنید، همگی به همین محصول متصل خواهند شد.\n\n" +
+
+          "بعد از اتمام تصاویر، مرحله بعدی تنظیم موجودی است."
 
         );
 
       }
 
 
-      // ----------------------------------------
-      // ویرایش Draft
-      // ----------------------------------------
+      // ========================================
+      // مدیریت محصولات
+      // ========================================
 
       else if (
-        action.startsWith("edit_draft:")
+        action === "manage_products"
+      ) {
+
+        await sendMessage(
+
+          chatId,
+
+          "📦 مدیریت محصولات\n\n" +
+
+          "این بخش در مرحله بعد ساخته می‌شود."
+
+        );
+
+      }
+
+
+      // ========================================
+      // دسته‌بندی
+      // ========================================
+
+      else if (
+        action === "categories"
+      ) {
+
+        await sendMessage(
+
+          chatId,
+
+          "🏷️ دسته‌بندی‌ها\n\n" +
+
+          "این بخش در مرحله بعد ساخته می‌شود."
+
+        );
+
+      }
+
+
+      // ========================================
+      // ویژه
+      // ========================================
+
+      else if (
+        action === "featured"
+      ) {
+
+        await sendMessage(
+
+          chatId,
+
+          "⭐ محصولات ویژه\n\n" +
+
+          "این بخش در مرحله بعد ساخته می‌شود."
+
+        );
+
+      }
+
+
+      // ========================================
+      // تخفیف
+      // ========================================
+
+      else if (
+        action === "discounts"
+      ) {
+
+        await sendMessage(
+
+          chatId,
+
+          "🔥 تخفیف‌ها\n\n" +
+
+          "این بخش در مرحله بعد ساخته می‌شود."
+
+        );
+
+      }
+
+
+      // ========================================
+      // تنظیمات
+      // ========================================
+
+      else if (
+        action === "settings"
+      ) {
+
+        await sendMessage(
+
+          chatId,
+
+          "⚙️ تنظیمات\n\n" +
+
+          "این بخش در مرحله بعد ساخته می‌شود."
+
+        );
+
+      }
+
+
+      // ========================================
+      // ویرایش Draft
+      // ========================================
+
+      else if (
+        action.startsWith(
+          "edit_draft:"
+        )
       ) {
 
         const productId =
           action.split(":")[1];
+
 
         await sendMessage(
 
@@ -818,26 +1194,29 @@ exports.handler = async (event) => {
       }
 
 
-      // ----------------------------------------
+      // ========================================
       // لغو Draft
-      // ----------------------------------------
+      // ========================================
 
       else if (
-        action.startsWith("cancel_draft:")
+        action.startsWith(
+          "cancel_draft:"
+        )
       ) {
 
         const productId =
           action.split(":")[1];
 
+
         await sendMessage(
 
           chatId,
 
-          "❌ درخواست لغو ثبت شد.\n\n" +
+          "❌ درخواست لغو محصول\n\n" +
 
           `Product ID: ${productId}\n\n` +
 
-          "حذف واقعی Draft را در مرحله مدیریت Draftها پیاده‌سازی می‌کنیم."
+          "مدیریت کامل Draftها را در مرحله مدیریت محصولات تکمیل می‌کنیم."
 
         );
 
@@ -861,16 +1240,20 @@ exports.handler = async (event) => {
     // پیام کانال
     // ==========================================
 
-    if (update.channel_post) {
+    if (
+      update.channel_post
+    ) {
 
       const channel =
         update.channel_post.chat;
+
 
       console.log(
         "CHANNEL POST:",
         channel.id,
         channel.title
       );
+
 
       return {
 
@@ -880,9 +1263,11 @@ exports.handler = async (event) => {
 
           success: true,
 
-          type: "channel_post",
+          type:
+            "channel_post",
 
-          channel_id: channel.id
+          channel_id:
+            channel.id
 
         })
 
@@ -890,6 +1275,10 @@ exports.handler = async (event) => {
 
     }
 
+
+    // ==========================================
+    // پایان
+    // ==========================================
 
     return {
 
@@ -909,6 +1298,7 @@ exports.handler = async (event) => {
       error
     );
 
+
     return {
 
       statusCode: 500,
@@ -917,7 +1307,8 @@ exports.handler = async (event) => {
 
         success: false,
 
-        error: error.message
+        error:
+          error.message
 
       })
 
