@@ -1,9 +1,5 @@
 exports.handler = async (event) => {
   try {
-    // =========================================================
-    // BASIC CONFIG
-    // =========================================================
-
     if (event.httpMethod !== "POST") {
       return {
         statusCode: 200,
@@ -33,7 +29,7 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // TELEGRAM API
+    // TELEGRAM HELPERS
     // =========================================================
 
     async function telegram(method, body = {}) {
@@ -66,7 +62,12 @@ exports.handler = async (event) => {
       return await telegram("sendMessage", body);
     }
 
-    async function editMessage(chatId, messageId, text, keyboard = null) {
+    async function editMessage(
+      chatId,
+      messageId,
+      text,
+      keyboard = null
+    ) {
       const body = {
         chat_id: chatId,
         message_id: messageId,
@@ -136,12 +137,11 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // PRODUCT PARSING
+    // PRODUCT TEMPLATE
     // =========================================================
 
     function parseProductTemplate(text) {
       const product = {};
-
       const lines = text.split(/\r?\n/);
 
       let currentField = null;
@@ -150,10 +150,7 @@ exports.handler = async (event) => {
         const line = rawLine.trim();
 
         if (!line) continue;
-
-        if (line === "#PRODUCT") {
-          continue;
-        }
+        if (line === "#PRODUCT") continue;
 
         const match = line.match(/^([^:]+):\s*(.*)$/);
 
@@ -162,7 +159,6 @@ exports.handler = async (event) => {
           const value = match[2].trim();
 
           currentField = field;
-
           product[field] = value;
 
           continue;
@@ -185,10 +181,8 @@ exports.handler = async (event) => {
         name: product["نام محصول"] || "",
         category: product["دسته‌بندی"] || "",
         brand: product["برند"] || "",
-
         price: product["قیمت"] || "",
         discount: product["تخفیف"] || "",
-
         features: product["ویژگی‌های محصول"] || "",
 
         variant1: product["تنوع 1"] || "",
@@ -201,7 +195,6 @@ exports.handler = async (event) => {
         options3: product["گزینه‌ها 3"] || "",
 
         description: product["توضیحات"] || "",
-
         status: product["وضعیت"] || ""
       };
     }
@@ -209,31 +202,29 @@ exports.handler = async (event) => {
     function validateProduct(product) {
       const errors = [];
 
-      if (!product.name) {
-        errors.push("نام محصول");
-      }
+      if (!product.name) errors.push("نام محصول");
+      if (!product.category) errors.push("دسته‌بندی");
+      if (!product.price) errors.push("قیمت");
+      if (!product.status) errors.push("وضعیت");
 
-      if (!product.category) {
-        errors.push("دسته‌بندی");
-      }
-
-      if (!product.price) {
-        errors.push("قیمت");
-      }
-
-      if (!product.status) {
-        errors.push("وضعیت");
-      }
-
-      if (product.variant1 && !product.options1) {
+      if (
+        product.variant1 &&
+        !product.options1
+      ) {
         errors.push("گزینه‌های تنوع 1");
       }
 
-      if (product.variant2 && !product.options2) {
+      if (
+        product.variant2 &&
+        !product.options2
+      ) {
         errors.push("گزینه‌های تنوع 2");
       }
 
-      if (product.variant3 && !product.options3) {
+      if (
+        product.variant3 &&
+        !product.options3
+      ) {
         errors.push("گزینه‌های تنوع 3");
       }
 
@@ -241,9 +232,7 @@ exports.handler = async (event) => {
     }
 
     function parseOptions(text) {
-      if (!text) {
-        return [];
-      }
+      if (!text) return [];
 
       return text
         .split(/[,،\n|]+/)
@@ -258,7 +247,6 @@ exports.handler = async (event) => {
     function buildDraftMessage(product, productId) {
       return (
         "#PRODUCT_DRAFT\n\n" +
-
         `ID: ${productId}\n` +
         "STATUS: draft\n\n" +
 
@@ -293,7 +281,7 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // PRODUCT INDEX
+    // DATABASE RECORDS
     // =========================================================
 
     async function saveProductIndex(
@@ -314,10 +302,6 @@ exports.handler = async (event) => {
         indexRecord
       );
     }
-
-    // =========================================================
-    // IMAGE RECORD
-    // =========================================================
 
     async function saveImageRecord(
       productId,
@@ -344,39 +328,34 @@ exports.handler = async (event) => {
     // =========================================================
 
     function extractProductId(text) {
-      if (!text) {
-        return null;
-      }
+      if (!text) return null;
 
-      const match = text.match(
-        /Product ID:\s*(P[0-9A-Z-]+)/i
-      );
+      const match =
+        text.match(
+          /Product ID:\s*(P[0-9A-Z-]+)/i
+        );
 
-      if (match) {
-        return match[1];
-      }
+      if (match) return match[1];
 
-      const match2 = text.match(
-        /PRODUCT_ID:\s*(P[0-9A-Z-]+)/i
-      );
+      const match2 =
+        text.match(
+          /PRODUCT_ID:\s*(P[0-9A-Z-]+)/i
+        );
 
-      if (match2) {
-        return match2[1];
-      }
+      if (match2) return match2[1];
 
-      const match3 = text.match(
-        /ID:\s*(P[0-9A-Z-]+)/i
-      );
+      const match3 =
+        text.match(
+          /ID:\s*(P[0-9A-Z-]+)/i
+        );
 
-      if (match3) {
-        return match3[1];
-      }
+      if (match3) return match3[1];
 
       return null;
     }
 
     // =========================================================
-    // STOCK COMBINATIONS
+    // VARIATIONS
     // =========================================================
 
     function buildCombinations(
@@ -451,12 +430,13 @@ exports.handler = async (event) => {
               }
             ];
 
-            const label = values
-              .map(
-                item =>
-                  `${item.dimension}: ${item.option}`
-              )
-              .join(" | ");
+            const label =
+              values
+                .map(
+                  item =>
+                    `${item.dimension}: ${item.option}`
+                )
+                .join(" | ");
 
             next.push({
               values,
@@ -474,9 +454,12 @@ exports.handler = async (event) => {
       };
     }
 
+    // =========================================================
+    // STOCK STATE
+    // =========================================================
+
     function buildStockMenuText(state) {
       const current = state.index;
-
       const total =
         state.combinations.length;
 
@@ -485,22 +468,18 @@ exports.handler = async (event) => {
 
       return (
         "📦 تنظیم موجودی محصول\n\n" +
-
         `🆔 Product ID: ${state.productId}\n\n` +
-
         `مرحله ${current + 1} از ${total}\n\n` +
-
         `🔹 ${combination.label}\n\n` +
-
         "لطفاً تعداد موجودی را به صورت عدد وارد کنید.\n\n" +
-
         "مثال:\n" +
         "25"
       );
     }
 
     function encodeState(state) {
-      const json = JSON.stringify(state);
+      const json =
+        JSON.stringify(state);
 
       return Buffer
         .from(json, "utf8")
@@ -509,11 +488,13 @@ exports.handler = async (event) => {
 
     function decodeState(encoded) {
       try {
-        const json = Buffer
-          .from(encoded, "base64url")
-          .toString("utf8");
+        const json =
+          Buffer
+            .from(encoded, "base64url")
+            .toString("utf8");
 
         return JSON.parse(json);
+
       } catch (error) {
         console.error(
           "STATE DECODE ERROR:",
@@ -532,12 +513,16 @@ exports.handler = async (event) => {
 
       text += "DIMENSIONS:\n";
 
-      if (state.dimensions.length === 0) {
+      if (
+        state.dimensions.length === 0
+      ) {
         text += "NONE\n\n";
+
       } else {
         state.dimensions.forEach(
           (dimension, index) => {
-            text += `${index + 1}. ${dimension.name}\n`;
+            text +=
+              `${index + 1}. ${dimension.name}\n`;
           }
         );
 
@@ -549,7 +534,9 @@ exports.handler = async (event) => {
       state.combinations.forEach(
         (combination, index) => {
           const quantity =
-            Number(state.stocks[index] || 0);
+            Number(
+              state.stocks[index] || 0
+            );
 
           const values =
             combination.values
@@ -584,20 +571,72 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // PRODUCT CATALOG
+    // CATALOG
     //
-    // This is the important new part.
+    // Catalog now stores variation information encoded in the
+    // final field.
     //
-    // We keep one pinned catalog message in the database
-    // channel. Because Bot API doesn't provide a generic
-    // "read channel history" method, the pinned message gives
-    // the bot a persistent entry point to the product list.
+    // PRODUCT|ID|NAME|CATEGORY|STATUS|PRICE|MESSAGE_ID|SETUP
     // =========================================================
 
-    function parseCatalog(text) {
-      if (!text) {
-        return [];
+    function encodeCatalogSetup(product) {
+      const setup = {
+        variant1: product.variant1 || "",
+        options1: parseOptions(product.options1 || ""),
+
+        variant2: product.variant2 || "",
+        options2: parseOptions(product.options2 || ""),
+
+        variant3: product.variant3 || "",
+        options3: parseOptions(product.options3 || "")
+      };
+
+      return Buffer
+        .from(
+          JSON.stringify(setup),
+          "utf8"
+        )
+        .toString("base64url");
+    }
+
+    function decodeCatalogSetup(encoded) {
+      if (!encoded) {
+        return {
+          variant1: "",
+          options1: [],
+          variant2: "",
+          options2: [],
+          variant3: "",
+          options3: []
+        };
       }
+
+      try {
+        return JSON.parse(
+          Buffer
+            .from(encoded, "base64url")
+            .toString("utf8")
+        );
+
+      } catch (error) {
+        console.error(
+          "CATALOG SETUP DECODE ERROR:",
+          error
+        );
+
+        return {
+          variant1: "",
+          options1: [],
+          variant2: "",
+          options2: [],
+          variant3: "",
+          options3: []
+        };
+      }
+    }
+
+    function parseCatalog(text) {
+      if (!text) return [];
 
       const lines =
         text.split(/\r?\n/);
@@ -605,13 +644,19 @@ exports.handler = async (event) => {
       const products = [];
 
       for (const line of lines) {
-        const match = line.match(
-          /^PRODUCT\|([^|]+)\|([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)\|(\d+)$/
-        );
 
-        if (!match) {
-          continue;
-        }
+        // New catalog format
+        const match =
+          line.match(
+            /^PRODUCT\|([^|]+)\|([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)\|(\d+)(?:\|([^|]+))?$/
+          );
+
+        if (!match) continue;
+
+        const setup =
+          decodeCatalogSetup(
+            match[8] || ""
+          );
 
         products.push({
           productId: match[1],
@@ -619,7 +664,25 @@ exports.handler = async (event) => {
           category: match[3],
           status: match[4],
           price: match[5],
-          messageId: Number(match[6])
+          messageId: Number(match[6]),
+
+          variant1:
+            setup.variant1 || "",
+
+          options1:
+            setup.options1 || [],
+
+          variant2:
+            setup.variant2 || "",
+
+          options2:
+            setup.options2 || [],
+
+          variant3:
+            setup.variant3 || "",
+
+          options3:
+            setup.options3 || []
         });
       }
 
@@ -632,7 +695,9 @@ exports.handler = async (event) => {
         "HamedShop Product Catalog\n" +
         "DO NOT DELETE THIS MESSAGE\n\n";
 
-      if (products.length === 0) {
+      if (
+        products.length === 0
+      ) {
         text +=
           "PRODUCTS: 0\n\n" +
           "هنوز محصولی ثبت نشده است.";
@@ -643,7 +708,9 @@ exports.handler = async (event) => {
       text +=
         `PRODUCTS: ${products.length}\n\n`;
 
-      for (const product of products) {
+      for (
+        const product of products
+      ) {
         const safeName =
           String(product.name || "")
             .replace(/\|/g, " ")
@@ -664,8 +731,26 @@ exports.handler = async (event) => {
             .replace(/\|/g, " ")
             .replace(/\r?\n/g, " ");
 
+        const setup =
+          encodeCatalogSetup({
+            variant1:
+              product.variant1 || "",
+            options1:
+              product.options1 || [],
+
+            variant2:
+              product.variant2 || "",
+            options2:
+              product.options2 || [],
+
+            variant3:
+              product.variant3 || "",
+            options3:
+              product.options3 || []
+          });
+
         text +=
-          `PRODUCT|${product.productId}|${safeName}|${safeCategory}|${safeStatus}|${safePrice}|${product.messageId}\n`;
+          `PRODUCT|${product.productId}|${safeName}|${safeCategory}|${safeStatus}|${safePrice}|${product.messageId}|${setup}\n`;
       }
 
       return text;
@@ -674,11 +759,17 @@ exports.handler = async (event) => {
     function buildCatalogKeyboard(products) {
       const keyboard = [];
 
-      for (const product of products) {
+      for (
+        const product of products
+      ) {
         keyboard.push([
           {
             text:
-              `📦 ${product.name}`.slice(0, 60),
+              `📦 ${product.name}`.slice(
+                0,
+                60
+              ),
+
             callback_data:
               `product:${product.productId}`
           }
@@ -687,6 +778,10 @@ exports.handler = async (event) => {
 
       return keyboard;
     }
+
+    // =========================================================
+    // CATALOG MESSAGE
+    // =========================================================
 
     async function getCatalogMessage() {
       const response =
@@ -765,9 +860,6 @@ exports.handler = async (event) => {
           "CATALOG PIN ERROR:",
           pinned
         );
-
-        // The message was still created.
-        // Return it so the flow can continue.
       }
 
       return created.result;
@@ -815,12 +907,39 @@ exports.handler = async (event) => {
           product.price,
 
         messageId:
-          product.messageId
+          product.messageId,
+
+        variant1:
+          product.variant1 || "",
+
+        options1:
+          parseOptions(
+            product.options1 || ""
+          ),
+
+        variant2:
+          product.variant2 || "",
+
+        options2:
+          parseOptions(
+            product.options2 || ""
+          ),
+
+        variant3:
+          product.variant3 || "",
+
+        options3:
+          parseOptions(
+            product.options3 || ""
+          )
       };
 
-      if (existingIndex >= 0) {
+      if (
+        existingIndex >= 0
+      ) {
         products[existingIndex] =
           catalogItem;
+
       } else {
         products.push(
           catalogItem
@@ -832,7 +951,9 @@ exports.handler = async (event) => {
           products
         );
 
-      if (newText.length > 4000) {
+      if (
+        newText.length > 4000
+      ) {
         console.error(
           "CATALOG TOO LARGE"
         );
@@ -858,7 +979,8 @@ exports.handler = async (event) => {
 
         return {
           ok: false,
-          error: "catalog_update_failed"
+          error:
+            "catalog_update_failed"
         };
       }
 
@@ -881,6 +1003,7 @@ exports.handler = async (event) => {
 
       return {
         catalog,
+
         products:
           parseCatalog(
             catalog.text || ""
@@ -905,7 +1028,7 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // PRODUCT PREVIEW
+    // PREVIEW
     // =========================================================
 
     function buildProductPreview(
@@ -961,10 +1084,6 @@ exports.handler = async (event) => {
       return text;
     }
 
-    // =========================================================
-    // GET PRODUCT DRAFT USING COPY MESSAGE
-    // =========================================================
-
     async function getProductDraft(
       chatId,
       product
@@ -989,7 +1108,7 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // MANAGEMENT MENU
+    // PRODUCTS MENU
     // =========================================================
 
     async function showProductsMenu(
@@ -998,9 +1117,7 @@ exports.handler = async (event) => {
       const data =
         await getProductsFromCatalog();
 
-      if (
-        !data.catalog
-      ) {
+      if (!data.catalog) {
         const catalog =
           await ensureCatalogMessage();
 
@@ -1026,7 +1143,9 @@ exports.handler = async (event) => {
       const products =
         data.products;
 
-      if (products.length === 0) {
+      if (
+        products.length === 0
+      ) {
         await sendMessage(
           chatId,
           "📦 مدیریت محصولات\n\n" +
@@ -1044,15 +1163,17 @@ exports.handler = async (event) => {
 
       await sendMessage(
         chatId,
+
         "📦 مدیریت محصولات\n\n" +
         `تعداد محصولات: ${products.length}\n\n` +
         "محصول موردنظر را انتخاب کنید:",
+
         keyboard
       );
     }
 
     // =========================================================
-    // PRIVATE CHAT TEXT
+    // PRIVATE TEXT
     // =========================================================
 
     if (
@@ -1170,6 +1291,10 @@ exports.handler = async (event) => {
         const nextIndex =
           state.index + 1;
 
+        // -------------------------------------------------------
+        // NEXT COMBINATION
+        // -------------------------------------------------------
+
         if (
           nextIndex <
           state.combinations.length
@@ -1203,6 +1328,10 @@ exports.handler = async (event) => {
             })
           };
         }
+
+        // -------------------------------------------------------
+        // SAVE STOCK
+        // -------------------------------------------------------
 
         const stockRecord =
           buildStockRecord(
@@ -1247,6 +1376,7 @@ exports.handler = async (event) => {
 
         await sendMessage(
           chatId,
+
           "✅ موجودی محصول با موفقیت ثبت شد.\n\n" +
 
           `🆔 Product ID:\n${state.productId}\n\n` +
@@ -1256,19 +1386,23 @@ exports.handler = async (event) => {
           `📊 مجموع موجودی:\n${totalStock}\n\n` +
 
           "مرحله موجودی با موفقیت تکمیل شد.",
+
           [
             [
               {
                 text:
                   "👁️ پیش‌نمایش محصول",
+
                 callback_data:
                   `preview:${state.productId}`
               }
             ],
+
             [
               {
                 text:
                   "✏️ ویرایش موجودی",
+
                 callback_data:
                   `stock:${state.productId}`
               }
@@ -1301,11 +1435,8 @@ exports.handler = async (event) => {
           chatId,
 
           "🛍️ HamedShop\n\n" +
-
           "سلام 👋\n" +
-
           "به پنل مدیریت فروشگاه خوش آمدید.\n\n" +
-
           "لطفاً یک گزینه را انتخاب کنید:",
 
           [
@@ -1313,6 +1444,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "➕ افزودن محصول",
+
                 callback_data:
                   "add_product"
               }
@@ -1322,6 +1454,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📦 مدیریت محصولات",
+
                 callback_data:
                   "manage_products"
               }
@@ -1331,6 +1464,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "🏷️ دسته‌بندی‌ها",
+
                 callback_data:
                   "categories"
               }
@@ -1340,6 +1474,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "⭐ محصولات ویژه",
+
                 callback_data:
                   "featured"
               }
@@ -1349,6 +1484,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "🔥 تخفیف‌ها",
+
                 callback_data:
                   "discounts"
               }
@@ -1358,6 +1494,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "⚙️ تنظیمات",
+
                 callback_data:
                   "settings"
               }
@@ -1399,7 +1536,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ قالب محصول کامل نیست.\n\n" +
-
             "فیلدهای زیر باید تکمیل شوند:\n\n" +
 
             errors
@@ -1438,10 +1574,6 @@ exports.handler = async (event) => {
             productId
           );
 
-        // -------------------------------------------------------
-        // SAVE DRAFT
-        // -------------------------------------------------------
-
         const databaseResponse =
           await sendMessage(
             DATABASE_CHANNEL_ID,
@@ -1472,11 +1604,9 @@ exports.handler = async (event) => {
         }
 
         const draftMessageId =
-          databaseResponse.result.message_id;
-
-        // -------------------------------------------------------
-        // PRODUCT INDEX
-        // -------------------------------------------------------
+          databaseResponse
+            .result
+            .message_id;
 
         const indexResponse =
           await saveProductIndex(
@@ -1507,7 +1637,8 @@ exports.handler = async (event) => {
         }
 
         // -------------------------------------------------------
-        // ADD TO CATALOG
+        // IMPORTANT:
+        // Save variation information into Catalog.
         // -------------------------------------------------------
 
         const catalogResponse =
@@ -1522,7 +1653,22 @@ exports.handler = async (event) => {
             price:
               product.price,
             messageId:
-              draftMessageId
+              draftMessageId,
+
+            variant1:
+              product.variant1,
+            options1:
+              product.options1,
+
+            variant2:
+              product.variant2,
+            options2:
+              product.options2,
+
+            variant3:
+              product.variant3,
+            options3:
+              product.options3
           });
 
         if (
@@ -1543,10 +1689,6 @@ exports.handler = async (event) => {
             "لطفاً بعداً Catalog را بررسی کنید."
           );
         }
-
-        // -------------------------------------------------------
-        // ADMIN MESSAGE
-        // -------------------------------------------------------
 
         await sendMessage(
           chatId,
@@ -1578,6 +1720,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📸 ارسال تصاویر",
+
                 callback_data:
                   `upload_images:${productId}`
               }
@@ -1587,6 +1730,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📦 تنظیم موجودی",
+
                 callback_data:
                   `stock:${productId}`
               }
@@ -1596,6 +1740,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "✏️ ویرایش اطلاعات",
+
                 callback_data:
                   `edit_draft:${productId}`
               }
@@ -1605,6 +1750,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "❌ لغو",
+
                 callback_data:
                   `cancel_draft:${productId}`
               }
@@ -1635,7 +1781,6 @@ exports.handler = async (event) => {
           chatId,
 
           "ℹ️ دستور یا پیام قابل پردازشی دریافت نشد.\n\n" +
-
           "برای بازگشت به منوی اصلی /start را ارسال کنید."
         );
       }
@@ -1674,7 +1819,6 @@ exports.handler = async (event) => {
           chatId,
 
           "⚠️ این تصویر به هیچ محصولی متصل نیست.\n\n" +
-
           "لطفاً ابتدا روی دکمه «📸 ارسال تصاویر» محصول موردنظر بزنید و سپس عکس را در پاسخ به پیام درخواست تصاویر ارسال کنید."
         );
 
@@ -1698,7 +1842,6 @@ exports.handler = async (event) => {
           chatId,
 
           "❌ نتوانستم Product ID این تصویر را تشخیص بدهم.\n\n" +
-
           "لطفاً از دکمه «📸 ارسال تصاویر» همان محصول استفاده کنید."
         );
 
@@ -1742,6 +1885,7 @@ exports.handler = async (event) => {
 
         await sendMessage(
           chatId,
+
           "❌ ذخیره تصویر انجام نشد.\nلطفاً دوباره تلاش کنید."
         );
 
@@ -1771,6 +1915,7 @@ exports.handler = async (event) => {
             {
               text:
                 "📸 تصویر بعدی",
+
               callback_data:
                 `upload_images:${productId}`
             }
@@ -1780,6 +1925,7 @@ exports.handler = async (event) => {
             {
               text:
                 "📦 تنظیم موجودی",
+
               callback_data:
                 `stock:${productId}`
             }
@@ -1802,7 +1948,7 @@ exports.handler = async (event) => {
     }
 
     // =========================================================
-    // CALLBACK QUERY
+    // CALLBACK
     // =========================================================
 
     if (
@@ -1815,7 +1961,10 @@ exports.handler = async (event) => {
         callbackQuery.id;
 
       const chatId =
-        callbackQuery.message.chat.id;
+        callbackQuery
+          .message
+          .chat
+          .id;
 
       const action =
         callbackQuery.data;
@@ -1916,7 +2065,7 @@ exports.handler = async (event) => {
       }
 
       // =======================================================
-      // PRODUCT SELECTED
+      // PRODUCT
       // =======================================================
 
       else if (
@@ -1937,7 +2086,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ محصول موردنظر در Catalog پیدا نشد.\n\n" +
-
             `Product ID: ${productId}`
           );
 
@@ -1973,6 +2121,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "👁️ پیش‌نمایش",
+
                 callback_data:
                   `preview:${product.productId}`
               }
@@ -1982,6 +2131,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📸 مدیریت تصاویر",
+
                 callback_data:
                   `upload_images:${product.productId}`
               }
@@ -1991,6 +2141,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📦 مدیریت موجودی",
+
                 callback_data:
                   `stock:${product.productId}`
               }
@@ -2000,6 +2151,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "✏️ ویرایش اطلاعات",
+
                 callback_data:
                   `edit_draft:${product.productId}`
               }
@@ -2009,6 +2161,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "❌ لغو محصول",
+
                 callback_data:
                   `cancel_draft:${product.productId}`
               }
@@ -2018,6 +2171,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "🔙 بازگشت به محصولات",
+
                 callback_data:
                   "manage_products"
               }
@@ -2060,6 +2214,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📦 تنظیم موجودی",
+
                 callback_data:
                   `stock:${productId}`
               }
@@ -2090,7 +2245,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ محصول در Catalog پیدا نشد.\n\n" +
-
             `Product ID: ${productId}`
           );
 
@@ -2104,60 +2258,64 @@ exports.handler = async (event) => {
           };
         }
 
-        const copied =
-          await getProductDraft(
-            chatId,
-            product
+        // -------------------------------------------------------
+        // Build combinations directly from Catalog
+        // -------------------------------------------------------
+
+        const stockData =
+          buildCombinations(
+            product.variant1,
+            product.options1,
+            product.variant2,
+            product.options2,
+            product.variant3,
+            product.options3
           );
 
-        if (
-          !copied ||
-          !copied.ok
-        ) {
-          await sendMessage(
-            chatId,
+        const combinations =
+          stockData.combinations;
 
-            "❌ نتوانستم اطلاعات محصول را از دیتابیس بخوانم.\n\n" +
+        const dimensions =
+          stockData.dimensions;
 
-            `Product ID: ${productId}`
-          );
+        const state = {
+          productId,
+          dimensions,
+          combinations,
+          stocks:
+            new Array(
+              combinations.length
+            ).fill(0),
+          index: 0
+        };
 
-          return {
-            statusCode: 200,
-            body: JSON.stringify({
-              success: false,
-              error:
-                "draft_read_failed"
-            })
-          };
-        }
+        const encodedState =
+          encodeState(state);
 
-        // copyMessage returns MessageId only.
-        // Therefore we use the original catalog message
-        // and the product data already stored in the catalog.
-        //
-        // For the stock flow we need variation information.
-        // The current Telegram-only architecture does not
-        // expose arbitrary channel history through Bot API.
-        //
-        // Therefore we ask the admin to start stock setup
-        // from the product creation flow in this version.
+        const stockText =
+          buildStockMenuText(
+            state
+          ) +
+          "\n\n" +
+          `STOCK_STATE:${encodedState}`;
 
         await sendMessage(
           chatId,
-
-          "📦 تنظیم موجودی\n\n" +
-
-          `🆔 Product ID:\n${productId}\n\n` +
-
-          "برای تنظیم موجودی، بهتر است این مرحله را از پیام اولیه ثبت محصول انجام دهید.\n\n" +
-
-          "⚠️ دلیل:\n" +
-
-          "تنوع‌های محصول داخل Draft ذخیره شده‌اند، اما Bot API امکان جستجوی عمومی تاریخچه کانال را در اختیار این تابع قرار نمی‌دهد.\n\n" +
-
-          "در مرحله بعد، جریان موجودی را به شکل کامل به مدیریت محصول متصل می‌کنیم."
+          stockText
         );
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            success: true,
+            action:
+              "stock_started",
+            product_id:
+              productId,
+            combinations:
+              combinations.length
+          })
+        };
       }
 
       // =======================================================
@@ -2182,7 +2340,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ محصول موردنظر پیدا نشد.\n\n" +
-
             `Product ID: ${productId}`
           );
 
@@ -2203,9 +2360,7 @@ exports.handler = async (event) => {
             product.messageId
           );
 
-        if (
-          !copied.ok
-        ) {
+        if (!copied.ok) {
           console.error(
             "COPY DRAFT ERROR:",
             copied
@@ -2215,7 +2370,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ نتوانستم Draft محصول را بخوانم.\n\n" +
-
             `Product ID: ${productId}`
           );
 
@@ -2228,10 +2382,6 @@ exports.handler = async (event) => {
             })
           };
         }
-
-        // copyMessage only returns MessageId,
-        // so the full preview is built from Catalog data
-        // for this stage.
 
         await sendMessage(
           chatId,
@@ -2257,6 +2407,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📸 تصاویر",
+
                 callback_data:
                   `upload_images:${productId}`
               },
@@ -2264,6 +2415,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "📦 موجودی",
+
                 callback_data:
                   `stock:${productId}`
               }
@@ -2273,6 +2425,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "✏️ ویرایش",
+
                 callback_data:
                   `edit_draft:${productId}`
               }
@@ -2282,6 +2435,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "🔙 مدیریت محصولات",
+
                 callback_data:
                   "manage_products"
               }
@@ -2312,7 +2466,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ محصول پیدا نشد.\n\n" +
-
             `Product ID: ${productId}`
           );
 
@@ -2360,7 +2513,7 @@ exports.handler = async (event) => {
       }
 
       // =======================================================
-      // CANCEL DRAFT
+      // CANCEL
       // =======================================================
 
       else if (
@@ -2381,7 +2534,6 @@ exports.handler = async (event) => {
             chatId,
 
             "❌ محصول پیدا نشد.\n\n" +
-
             `Product ID: ${productId}`
           );
 
@@ -2409,6 +2561,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "❌ بله، لغو شود",
+
                 callback_data:
                   `confirm_cancel:${productId}`
               }
@@ -2418,6 +2571,7 @@ exports.handler = async (event) => {
               {
                 text:
                   "🔙 انصراف",
+
                 callback_data:
                   `product:${productId}`
               }
@@ -2469,11 +2623,6 @@ exports.handler = async (event) => {
           };
         }
 
-        // We don't delete the historical
-        // database records.
-        // Instead, we remove the product
-        // from the active management catalog.
-
         products.splice(
           productIndex,
           1
@@ -2522,7 +2671,7 @@ exports.handler = async (event) => {
       }
 
       // =======================================================
-      // CATEGORIES
+      // PLACEHOLDER SECTIONS
       // =======================================================
 
       else if (
@@ -2533,14 +2682,9 @@ exports.handler = async (event) => {
           chatId,
 
           "🏷️ دسته‌بندی‌ها\n\n" +
-
           "این بخش در مرحله بعد ساخته می‌شود."
         );
       }
-
-      // =======================================================
-      // FEATURED
-      // =======================================================
 
       else if (
         action ===
@@ -2550,14 +2694,9 @@ exports.handler = async (event) => {
           chatId,
 
           "⭐ محصولات ویژه\n\n" +
-
           "این بخش در مرحله بعد ساخته می‌شود."
         );
       }
-
-      // =======================================================
-      // DISCOUNTS
-      // =======================================================
 
       else if (
         action ===
@@ -2567,14 +2706,9 @@ exports.handler = async (event) => {
           chatId,
 
           "🔥 تخفیف‌ها\n\n" +
-
           "این بخش در مرحله بعد ساخته می‌شود."
         );
       }
-
-      // =======================================================
-      // SETTINGS
-      // =======================================================
 
       else if (
         action ===
@@ -2584,21 +2718,15 @@ exports.handler = async (event) => {
           chatId,
 
           "⚙️ تنظیمات\n\n" +
-
           "این بخش در مرحله بعد ساخته می‌شود."
         );
       }
-
-      // =======================================================
-      // UNKNOWN CALLBACK
-      // =======================================================
 
       else {
         await sendMessage(
           chatId,
 
           "⚠️ این عملیات شناخته نشد.\n\n" +
-
           "لطفاً دوباره از /start شروع کنید."
         );
       }
@@ -2639,10 +2767,6 @@ exports.handler = async (event) => {
       };
     }
 
-    // =========================================================
-    // DEFAULT
-    // =========================================================
-
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -2651,6 +2775,7 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
+
     console.error(
       "Webhook error:",
       error
