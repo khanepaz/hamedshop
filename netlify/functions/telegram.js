@@ -1,6 +1,6 @@
-exports.handler = async (event) => {
-  try {
-    if (event.httpMethod !== "POST") {
+// exports.handler = async (event) => {
+ // try {
+    // if (event.httpMethod !== "POST") {
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -10,7 +10,7 @@ exports.handler = async (event) => {
       };
     }
 
-    const update = JSON.parse(event.body || "{}");
+//    const update = JSON.parse(event.body || "{}");
 
     const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -47,7 +47,7 @@ exports.handler = async (event) => {
       return await response.json();
     }
 
-    async function sendMessage(chatId, text, keyboard = null) {
+//    async function sendMessage(chatId, text, keyboard = null) {
       const body = {
         chat_id: chatId,
         text
