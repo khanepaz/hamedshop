@@ -95,6 +95,41 @@ exports.handler = async (event) => {
       return await response.json();
     }
 
+    // ==========================================
+// ذخیره Product Index
+// ==========================================
+
+async function saveProductIndex(
+  productId,
+  messageId,
+  messageType = "DRAFT"
+) {
+
+  const indexRecord =
+
+    "#PRODUCT_INDEX\n\n" +
+
+    `PRODUCT_ID: ${productId}\n` +
+
+    `MESSAGE_ID: ${messageId}\n` +
+
+    `CHANNEL_ID: ${DATABASE_CHANNEL_ID}\n` +
+
+    `MESSAGE_TYPE: ${messageType}\n` +
+
+    `CREATED_AT: ${new Date().toISOString()}`;
+
+
+  return await sendMessage(
+
+    DATABASE_CHANNEL_ID,
+
+    indexRecord
+
+  );
+
+}
+
 
     // ==========================================
     // پاسخ به Callback
@@ -1287,7 +1322,45 @@ exports.handler = async (event) => {
         const draftMessageId =
           databaseResponse.result.message_id;
 
+// --------------------------------------
+// ذخیره Product Index
+// --------------------------------------
 
+const indexResponse =
+  await saveProductIndex(
+
+    productId,
+
+    draftMessageId,
+
+    "DRAFT"
+
+  );
+
+
+if (!indexResponse.ok) {
+
+  console.error(
+    "PRODUCT INDEX ERROR:",
+    indexResponse
+  );
+
+
+  await sendMessage(
+
+    chatId,
+
+    "⚠️ محصول ذخیره شد اما ثبت Product Index انجام نشد.\n\n" +
+
+    `🆔 Product ID: ${productId}\n` +
+
+    `📌 Draft Message ID: ${draftMessageId}\n\n` +
+
+    "لطفاً این مورد را بررسی کنید."
+
+  );
+
+}
         // --------------------------------------
         // پاسخ به ادمین
         // --------------------------------------
