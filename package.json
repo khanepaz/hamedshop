@@ -1,8 +1,1 @@
-{
-  "name": "hamedshop",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "@netlify/blobs": "^11.0.3"
-  }
-}
+
